@@ -1,4 +1,4 @@
-![Alt Text](Image/Screenshot%20.png)
+![Screenshot](Image/Screenshot%20.png)
 
  ```
 # Radial Clock
