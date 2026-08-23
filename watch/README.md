@@ -153,9 +153,33 @@ be a placeholder".
   because the CPU stays clocked up instead of idling between frames. Note the rate is *not*
   capped at the `frequency` value — 15 yielded 20 fps.
 
-  Toggles in `tools/generate.py`: `FRAME_RATE_HINT = False` restores the stock 10 fps and
-  draws less power; `SECONDS_SOURCE = "SECOND"` replaces the glide with a 1 Hz step, which
-  is cheapest of all but loses the radial motion the design is built around.
+  Toggles in `tools/generate.py`: `FRAME_RATE_HINT = False` restores the stock 10 fps;
+  `SECONDS_SOURCE = "SECOND"` replaces the glide with a 1 Hz step, which is cheapest of all
+  but loses the radial motion the design is built around. **Neither is worth doing for
+  battery** — see below.
+
+- **Battery: the glide is not the problem.** Measured over 5h 40m of ordinary wear with AOD
+  on, 95% → 57% (91.7 mAh of a 240 mAh cell):
+
+  | | mAh | share |
+  |---|---|---|
+  | watch face runtime (`com.samsung.wear.watchface.runtime`) | 2.56 | 2.8% |
+  | `ambient_display` (the AOD panel) | 25.8 | 28% |
+  | system (UID 1000) | 8.61 | 9.4% |
+
+  `Screen on discharge: 0 mAh. Screen doze discharge: 91.7 mAh.` The screen was on for
+  13m 13s of 5h 40m (3.9%) across 161 wrist raises — ~5s per glance — and *interactive*
+  time, when the 24.6fps glide actually runs, was 3m 11s (0.9%). Total discharged while
+  the screen was on: 1%, against 38% overall.
+
+  So the frame-rate hint costs on the order of 1% of battery over a working day's wear.
+  The dominant cost is the AOD panel being lit at all, and at 2.04% mean luminance our
+  emission is a small part of that — dimming the face would recover very little. Projected
+  life is ~15h from full with AOD on; the real lever is AOD itself, not this watch face.
+
+  Read it again with: `adb shell dumpsys batterystats`, then find the UID of
+  `com.samsung.wear.watchface.runtime` via `adb shell pm list packages -U` (it renders the
+  face; the `radialclock` package itself is inert and will look idle).
 - **Always-on display.** Ambient keeps the whole minutes dial — ticks *and* labels — at
   alpha 160, with the readouts at 230, so the radial design survives on the AOD. Only the
   seconds dial goes dark, and that is for correctness rather than power: ambient refreshes
