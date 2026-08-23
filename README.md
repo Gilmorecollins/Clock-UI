@@ -1,5 +1,9 @@
 ![Screenshot](Image/Screenshot%20.png)
 
+> **On a real watch:** this design is also ported to a Wear OS watch face for the
+> Galaxy Watch 4 — see [`watch/`](watch/README.md) for the Watch Face Format project
+> and install instructions.
+
  ```
 # Radial Clock
 

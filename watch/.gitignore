@@ -1,0 +1,10 @@
+.gradle/
+build/
+local.properties
+__pycache__/
+*.pyc
+.idea/
+*.iml
+*.apk
+*.aab
+*.keystore

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.type.watch" />
+
+    <!-- Watch Face Format bundles are resource-only: there is no code to run. -->
+    <application
+        android:hasCode="false"
+        android:label="@string/watch_face_name">
+
+        <!--
+          Version 1. Samsung's WFF runtime on this watch does not enumerate
+          packages declaring version 5 - they never reach the watch face picker.
+          The declarative faces that ship on the device (com.samsung.sree.*) all
+          declare 1, so this stays at 1 and the XML avoids post-v1 features.
+        -->
+        <property
+            android:name="com.google.wear.watchface.format.version"
+            android:value="1" />
+
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="true" />
+
+    </application>
+
+</manifest>

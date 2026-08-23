@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Comfortaa (SIL Open Font License 1.1) - the same family the web version loads
+  from Google Fonts. Static instances were cut from the variable font so that the
+  WFF `weight` attribute resolves without relying on variable-axis support.
+
+  Note the family tops out at 700; the CSS asks for `font-weight: 900`, which
+  browsers were already clamping to Bold.
+-->
+<font-family xmlns:android="http://schemas.android.com/apk/res/android">
+    <font
+        android:font="@font/comfortaa_regular"
+        android:fontStyle="normal"
+        android:fontWeight="400" />
+    <font
+        android:font="@font/comfortaa_bold"
+        android:fontStyle="normal"
+        android:fontWeight="700" />
+</font-family>
