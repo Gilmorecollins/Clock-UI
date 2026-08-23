@@ -81,6 +81,47 @@ Two things worth knowing if you touch the build config:
 The debug APK lands in `watchface/build/outputs/apk/debug/watchface-debug.apk` (~181 KB).
 It's debug-signed, which is all a sideload needs.
 
+### Release builds
+
+Signing material lives **outside the repository**, in `~/.radial-clock-signing/`, so that
+nothing in the project tree can leak it into a commit and no editor watching the workspace
+ever sees the passwords. Override the location with the `RADIAL_CLOCK_SIGNING` env var.
+Without that directory the release build still succeeds — it just comes out unsigned — so a
+fresh clone is not blocked.
+
+To set it up:
+
+```powershell
+mkdir "$env:USERPROFILE\.radial-clock-signing"; cd "$env:USERPROFILE\.radial-clock-signing"
+& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v `
+    -keystore radial-clock.jks -alias radialclock -keyalg RSA -keysize 4096 -validity 10000
+```
+
+Then `keystore.properties` beside it, written with `-Encoding ascii` — PowerShell 5.1's
+default `utf8` adds a BOM that Java's properties parser cannot read, which surfaces as a
+misleading "SDK location not found":
+
+```
+storeFile=radial-clock.jks
+storePassword=...
+keyAlias=radialclock
+keyPassword=...
+```
+
+**Back the `.jks` up somewhere safe.** Losing it is worse than leaking it: without it you
+cannot ship an update that installs over an existing copy, and every user would have to
+uninstall and re-add the face.
+
+Then `gradle :watchface:assembleRelease`. Verify what you actually built before shipping it:
+
+```powershell
+& "$env:LOCALAPPDATA\Android\Sdk\build-tools\36.1.0\apksigner.bat" verify --print-certs `
+    watchface\build\outputs\apk\release\watchface-release.apk
+```
+
+It must **not** say `CN=Android Debug`. A release APK cannot install over a debug one —
+signatures differ, and you get `INSTALL_FAILED_UPDATE_INCOMPATIBLE` — so uninstall first.
+
 ## Install on the Galaxy Watch 4
 
 **Enable developer mode on the watch** (already done on this watch)
