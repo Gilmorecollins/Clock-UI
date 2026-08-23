@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Preview is the only required element. Keep this minimal: an unrecognised value
+  here (an invalid Category, say) is enough to stop the watch face being listed.
+-->
+<WatchFaceInfo>
+    <Preview value="@drawable/preview" />
+</WatchFaceInfo>
