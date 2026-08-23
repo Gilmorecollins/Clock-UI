@@ -7,4 +7,10 @@ __pycache__/
 *.iml
 *.apk
 *.aab
+
+# Signing material. These must never be committed: keystore.properties holds the
+# passwords in PLAIN TEXT, and losing or leaking the .jks means losing the ability
+# to ship an in-place update that users can install over the existing app.
 *.keystore
+*.jks
+keystore.properties
