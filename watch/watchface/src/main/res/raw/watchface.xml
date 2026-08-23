@@ -10,6 +10,12 @@
 
   <Scene backgroundColor="#000000">
 
+    <!-- Burn-in protection: nudges the whole face around a 5x5 one-pixel lattice,
+         one step per minute. Nothing on this watch shifts the face otherwise. -->
+    <Group name="burn_in_drift" x="0" y="0" width="450" height="450">
+      <Transform target="x" value="[MINUTE] % 5 - 2" />
+      <Transform target="y" value="floor([MINUTE] / 5) % 5 - 2" />
+
     <!-- Outer dial: seconds.  Hidden in ambient - moving parts are not allowed
          there, and this is the single biggest consumer of lit pixels. -->
     <Group name="seconds_dial" x="0" y="0" width="450" height="450"
@@ -274,5 +280,6 @@
       </SecondHand>
     </AnalogClock>
 
+    </Group>
   </Scene>
 </WatchFace>

@@ -167,10 +167,29 @@ be a placeholder".
   argument for hiding anything else — tune `AMBIENT_DIAL_ALPHA` / `AMBIENT_TEXT_ALPHA` in
   `generate.py` freely.
 
-  Not yet verified on-device: the screen only enters AOD when the watch is worn, and there
-  is no adb command to force ambient. Burn-in is also unconfirmed — neither the WFF ambient
-  docs nor the quality guidelines mention pixel shifting or say whether the system applies
-  it to declarative faces, and the hour and pill sit at fixed pixels.
+  Verified on-device: with the watch worn, `mScreenState=DOZE` and the face measures
+  **2.04%** mean luminance. The screen only enters AOD when worn — there is no adb command
+  to force it, so this cannot be checked with the watch sitting on a desk.
+
+- **Burn-in protection is ours to do; the system does not do it.** Two AOD frames 75s apart
+  put the hour glyphs on *pixel-identical* coordinates (0.00px drift), and the frames
+  genuinely differed elsewhere — 5,899 pixels changed across the minute dial — so the
+  capture was live, not a stale buffer. Neither the WFF ambient docs nor the quality
+  guidelines mention pixel shifting at all.
+
+  So `burn_in_drift` wraps the whole face and nudges it around a 5×5 one-pixel lattice, one
+  step per minute:
+
+  ```xml
+  <Transform target="x" value="[MINUTE] % 5 - 2" />
+  <Transform target="y" value="floor([MINUTE] / 5) % 5 - 2" />
+  ```
+
+  Integer modular arithmetic rather than `sin`/`cos` on purpose: the docs never say whether
+  WFF's trig takes degrees or radians, and this needs no such assumption. Measured after the
+  change, consecutive minutes move the hour by 0.75px on the 396px screen — one design unit
+  — while y correctly holds still until the 5-minute step. Set `BURN_IN_DRIFT = False` to
+  disable.
 - **Hour format** follows the watch's own 12/24-hour setting via
   `[IS_24_HOUR_MODE] ? [HOUR_0_23] : [HOUR_1_12]`. The web version was hardcoded to 24-hour.
 - **Format version must stay at 1** on this watch. Declaring `5` builds and installs fine,

@@ -113,6 +113,24 @@ SWEEP_FREQUENCY = 60
 AMBIENT_DIAL_ALPHA = 160
 AMBIENT_TEXT_ALPHA = 230
 
+# Burn-in protection. Measured on this watch, nothing shifts the face in ambient:
+# two AOD frames 75s apart (which differ elsewhere, so the capture was live) put
+# the hour glyphs on pixel-identical coordinates. The hour sits at alpha 230 in
+# the same place for a whole hour at a time, which is how OLEDs get ghosted.
+#
+# So nudge the entire face around a small lattice, one step per minute. Deliberately
+# integer modular arithmetic rather than sin/cos: WFF's docs do not say whether its
+# trig takes degrees or radians, and this needs no such assumption.
+#
+#   x = [MINUTE] % 5 - 2                 -> -2..+2
+#   y = floor([MINUTE] / 5) % 5 - 2      -> -2..+2
+#
+# 25 distinct positions, so the load spreads over ~25px2 instead of burning one
+# fixed set. At +/-2px it is imperceptible in either mode. Children sit within
+# 0..450 of the group, and the outermost ticks stop at radius 212 (13px shy of the
+# edge), so a 2px shift cannot push anything outside the group's bounds.
+BURN_IN_DRIFT = True
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 RES = os.path.join(HERE, "..", "watchface", "src", "main", "res")
 DRAWABLE = os.path.join(RES, "drawable")
@@ -280,7 +298,7 @@ def build_xml(pill_box: tuple[int, int, int, int]) -> str:
   <Metadata key="PREVIEW_TIME" value="12:48:27" />
 
   <Scene backgroundColor="#000000">
-
+{drift_open()}
     <!-- Outer dial: seconds.  Hidden in ambient - moving parts are not allowed
          there, and this is the single biggest consumer of lit pixels. -->
     <Group name="seconds_dial" x="0" y="0" width="{SIZE}" height="{SIZE}"
@@ -348,9 +366,27 @@ def build_xml(pill_box: tuple[int, int, int, int]) -> str:
     </PartText>
 
 {frame_rate_probe()}
+{drift_close()}
   </Scene>
 </WatchFace>
 """
+
+
+def drift_open() -> str:
+    """Open the burn-in drift group that carries the whole face."""
+    if not BURN_IN_DRIFT:
+        return ""
+    return f"""
+    <!-- Burn-in protection: nudges the whole face around a 5x5 one-pixel lattice,
+         one step per minute. Nothing on this watch shifts the face otherwise. -->
+    <Group name="burn_in_drift" x="0" y="0" width="{SIZE}" height="{SIZE}">
+      <Transform target="x" value="[MINUTE] % 5 - 2" />
+      <Transform target="y" value="floor([MINUTE] / 5) % 5 - 2" />
+"""
+
+
+def drift_close() -> str:
+    return "    </Group>" if BURN_IN_DRIFT else ""
 
 
 def frame_rate_probe() -> str:
