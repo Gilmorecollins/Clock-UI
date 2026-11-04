@@ -9,7 +9,7 @@ plugins {
 // repository, in ~/.radial-clock-signing/, for two reasons: nothing inside the
 // project tree can leak them into a commit, and editors watching the workspace
 // never see the passwords at all. Override the location with the
-// RADIAL_CLOCK_SIGNING env var. See watch/README.md for the keytool command.
+// RADIAL_CLOCK_SIGNING env var. See README.md for the keytool command.
 //
 // Without that file the release build goes unsigned rather than failing, so a
 // fresh clone still builds.
