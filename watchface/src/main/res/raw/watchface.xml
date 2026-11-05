@@ -18,16 +18,15 @@
 
     <!-- Outer dial: ticks and labels are static. Only the small seconds
          indicator below animates, which keeps the continuous motion lightweight. -->
-    <Group name="seconds_dial" x="0" y="0" width="450" height="450">
-      <Variant mode="AMBIENT" target="alpha" value="0" />
-      <Group name="seconds_ticks" x="0" y="0" width="450" height="450"
+    <Group name="seconds_ticks" x="0" y="0" width="450" height="450"
            pivotX="0.5" pivotY="0.5">
+      <Variant mode="AMBIENT" target="alpha" value="0" />
       <PartImage name="seconds_tick_image"
                  x="5" y="5"
                  width="440" height="440">
         <Image resource="ticks_seconds" />
       </PartImage>
-      </Group>
+    </Group>
 
     <PartDraw name="seconds_indicator" x="0" y="0" width="450" height="450"
               pivotX="0.5" pivotY="0.5">
@@ -46,6 +45,8 @@
       </Ellipse>
     </PartDraw>
 
+    <Group name="seconds_labels" x="0" y="0" width="450" height="450">
+      <Variant mode="AMBIENT" target="alpha" value="0" />
       <PartText name="second_label_0"
                 x="375" y="208"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
