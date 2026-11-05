@@ -16,23 +16,39 @@
       <Transform target="x" value="[MINUTE] % 5 - 2" />
       <Transform target="y" value="floor([MINUTE] / 5) % 5 - 2" />
 
-    <!-- Outer dial: seconds.  Hidden in ambient - moving parts are not allowed
-         there, and this is the single biggest consumer of lit pixels. -->
-    <Group name="seconds_dial" x="0" y="0" width="450" height="450"
-           pivotX="0.5" pivotY="0.5">
+    <!-- Outer dial: ticks and labels are static. Only the small seconds
+         indicator below animates, which keeps the continuous motion lightweight. -->
+    <Group name="seconds_dial" x="0" y="0" width="450" height="450">
       <Variant mode="AMBIENT" target="alpha" value="0" />
-      <Transform target="angle" value="-6 * [SECOND_MILLISECOND]" />
-
-      <PartImage name="seconds_ticks"
+      <Group name="seconds_ticks" x="0" y="0" width="450" height="450"
+           pivotX="0.5" pivotY="0.5">
+      <PartImage name="seconds_tick_image"
                  x="5" y="5"
                  width="440" height="440">
         <Image resource="ticks_seconds" />
       </PartImage>
+      </Group>
+
+    <PartDraw name="seconds_indicator" x="0" y="0" width="450" height="450"
+              pivotX="0.5" pivotY="0.5">
+      <Variant mode="AMBIENT" target="alpha" value="0" />
+      <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
+      <Arc centerX="225" centerY="225" width="420" height="420"
+           startAngle="-18" endAngle="-6">
+        <Stroke cap="ROUND" color="#168CA6" thickness="6" />
+      </Arc>
+      <Arc centerX="225" centerY="225" width="420" height="420"
+           startAngle="-6" endAngle="0">
+        <Stroke cap="ROUND" color="#30D7FF" thickness="6" />
+      </Arc>
+      <Ellipse x="217" y="7" width="16" height="16">
+        <Fill color="#30D7FF" />
+      </Ellipse>
+    </PartDraw>
 
       <PartText name="second_label_0"
                 x="375" y="208"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">0</Font>
         </Text>
@@ -40,7 +56,6 @@
       <PartText name="second_label_5"
                 x="351" y="297"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">5</Font>
         </Text>
@@ -48,7 +63,6 @@
       <PartText name="second_label_10"
                 x="286" y="362"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">10</Font>
         </Text>
@@ -56,7 +70,6 @@
       <PartText name="second_label_15"
                 x="197" y="386"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">15</Font>
         </Text>
@@ -64,7 +77,6 @@
       <PartText name="second_label_20"
                 x="108" y="362"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">20</Font>
         </Text>
@@ -72,7 +84,6 @@
       <PartText name="second_label_25"
                 x="43" y="297"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">25</Font>
         </Text>
@@ -80,7 +91,6 @@
       <PartText name="second_label_30"
                 x="19" y="208"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">30</Font>
         </Text>
@@ -88,7 +98,6 @@
       <PartText name="second_label_35"
                 x="43" y="119"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">35</Font>
         </Text>
@@ -96,7 +105,6 @@
       <PartText name="second_label_40"
                 x="108" y="54"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">40</Font>
         </Text>
@@ -104,7 +112,6 @@
       <PartText name="second_label_45"
                 x="197" y="30"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">45</Font>
         </Text>
@@ -112,7 +119,6 @@
       <PartText name="second_label_50"
                 x="286" y="54"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">50</Font>
         </Text>
@@ -120,7 +126,6 @@
       <PartText name="second_label_55"
                 x="351" y="119"
                 width="56" height="34" pivotX="0.5" pivotY="0.5">
-        <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
         <Text align="CENTER">
           <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">55</Font>
         </Text>
@@ -276,7 +281,7 @@
     <AnalogClock x="0" y="0" width="450" height="450">
       <SecondHand resource="blank" x="224" y="120" width="2" height="105"
                   pivotX="0.5" pivotY="1.0" alpha="0">
-        <Sweep frequency="60" />
+        <Sweep frequency="SYNC_TO_DEVICE" />
       </SecondHand>
     </AnalogClock>
 

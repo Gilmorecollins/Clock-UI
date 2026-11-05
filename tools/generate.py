@@ -85,15 +85,12 @@ SECONDS_SOURCE = "SECOND_MILLISECOND"
 # second hand purely as a hint -- and the rate it unlocks applies to the whole
 # surface, so the dials and labels get it too.
 #
-# Measured on the Galaxy Watch 4, screen on:
-#     no hint          10.0 fps   (flat 100ms cadence)
-#     frequency=15     20.2 fps
-#     frequency=60     24.6 fps   (p50 gap 33ms, many frames at a single vsync)
-#
-# 0% janky frames in every case. Set FRAME_RATE_HINT = False to get the stock
-# 10fps back, which draws less power.
+# WFF accepts 2, 5, 10, 15, or SYNC_TO_DEVICE. The latter lets the runtime draw
+# as quickly as the device can while keeping the sweep smooth; it is the best
+# choice for this continuously rotating dial. Set FRAME_RATE_HINT = False to
+# return to the stock low refresh rate, which draws less power.
 FRAME_RATE_HINT = True
-SWEEP_FREQUENCY = 60
+SWEEP_FREQUENCY = "SYNC_TO_DEVICE"
 
 # Ambient alphas. The quality bar (WO-P7) is 15% *mean luminance* across the face,
 # not a count of lit pixels -- and this design is nearly all black, so the entire
@@ -260,22 +257,22 @@ def draw_preview(path: str, hour: int, minute: int, second: int,
 # watchface.xml
 # --------------------------------------------------------------------------
 
-def dial_labels(radius: float, size: int, weight: str, source: str, prefix: str,
+def dial_labels(radius: float, size: int, weight: str, source: str | None, prefix: str,
                 box_w: int, box_h: int, indent: str) -> str:
-    """One PartText per 5-minute label, each cancelling out its dial's rotation.
+    """One PartText per 5-minute label.
 
-    The parent Group rotates by -6*[source]; every label rotates itself back by
-    +6*[source] about its own centre, so the digits stay upright while travelling
-    around the dial.  This is the CSS `rotate(calc(var(--dRotate) - var(--rotate)))`
-    trick, minus the inherited rotation the DOM gave us for free.
+    A source counter-rotates labels inside a moving dial. Passing None keeps labels
+    static, which avoids live text layout on every frame of the seconds sweep.
     """
     out = []
+    counter_rotation = "" if source is None else (
+        f'\n{indent}  <Transform target="angle" value="6 * [{source}]" />'
+    )
     for i in range(0, 60, 5):
         x, y = polar(radius, 6 * i)
         out.append(f"""{indent}<PartText name="{prefix}_label_{i}"
 {indent}          x="{round(x - box_w / 2)}" y="{round(y - box_h / 2)}"
-{indent}          width="{box_w}" height="{box_h}" pivotX="0.5" pivotY="0.5">
-{indent}  <Transform target="angle" value="6 * [{source}]" />
+{indent}          width="{box_w}" height="{box_h}" pivotX="0.5" pivotY="0.5">{counter_rotation}
 {indent}  <Text align="CENTER">
 {indent}    <Font family="comfortaa" size="{size}" weight="{weight}" color="{DIAL_TEXT}">{i}</Font>
 {indent}  </Text>
@@ -296,20 +293,38 @@ def build_xml(pill_box: tuple[int, int, int, int]) -> str:
 
   <Scene backgroundColor="#000000">
 {drift_open()}
-    <!-- Outer dial: seconds.  Hidden in ambient - moving parts are not allowed
-         there, and this is the single biggest consumer of lit pixels. -->
-    <Group name="seconds_dial" x="0" y="0" width="{SIZE}" height="{SIZE}"
+    <!-- Outer dial: ticks and labels are static. Only the small seconds
+         indicator below animates, which keeps the continuous motion lightweight. -->
+    <Group name="seconds_ticks" x="0" y="0" width="{SIZE}" height="{SIZE}"
            pivotX="0.5" pivotY="0.5">
       <Variant mode="AMBIENT" target="alpha" value="0" />
-      <Transform target="angle" value="-6 * [{SECONDS_SOURCE}]" />
-
-      <PartImage name="seconds_ticks"
+      <PartImage name="seconds_tick_image"
                  x="{round((SIZE - SEC_IMG) / 2)}" y="{round((SIZE - SEC_IMG) / 2)}"
                  width="{SEC_IMG}" height="{SEC_IMG}">
         <Image resource="ticks_seconds" />
       </PartImage>
+    </Group>
 
-{dial_labels(SEC_NUM_RADIUS, SEC_NUM_SIZE, "BOLD", SECONDS_SOURCE, "second", 56, 34, "      ")}
+    <PartDraw name="seconds_indicator" x="0" y="0" width="{SIZE}" height="{SIZE}"
+              pivotX="0.5" pivotY="0.5">
+      <Variant mode="AMBIENT" target="alpha" value="0" />
+      <Transform target="angle" value="6 * [{SECONDS_SOURCE}]" />
+      <Arc centerX="{CX}" centerY="{CY}" width="420" height="420"
+           startAngle="-18" endAngle="-6">
+        <Stroke cap="ROUND" color="#168CA6" thickness="6" />
+      </Arc>
+      <Arc centerX="{CX}" centerY="{CY}" width="420" height="420"
+           startAngle="-6" endAngle="0">
+        <Stroke cap="ROUND" color="#30D7FF" thickness="6" />
+      </Arc>
+      <Ellipse x="217" y="7" width="16" height="16">
+        <Fill color="#30D7FF" />
+      </Ellipse>
+    </PartDraw>
+
+    <Group name="seconds_labels" x="0" y="0" width="{SIZE}" height="{SIZE}">
+      <Variant mode="AMBIENT" target="alpha" value="0" />
+{dial_labels(SEC_NUM_RADIUS, SEC_NUM_SIZE, "BOLD", None, "second", 56, 34, "      ")}
     </Group>
 
     <!-- Inner dial: minutes.  This whole dial stays visible in ambient: it advances
