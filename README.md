@@ -11,14 +11,18 @@ Wear OS watch faces have no WebView — there is no API that renders HTML/CSS/JS
 face. WFF is a declarative XML format the system renders itself, which is what makes
 always-on display and the power budget possible. So the design is rebuilt, not embedded.
 
-The two tricky parts of the original translate like this:
+The current design follows
+[`design/mockups/radial-clock-comet-concept.png`](design/mockups/radial-clock-comet-concept.png):
 
-| Web version | Watch face |
+| Element | How it is built |
 |---|---|
-| 60 `<i class="spike">` per dial | one PNG per dial with all 60 ticks baked in — they rotate *with* the dial, so they don't need to be live elements |
-| `.spike:after` counter-rotates each label to stay upright | one `PartText` per label with `<Transform target="angle" value="6 * [SECOND]">`, cancelling the parent `Group`'s `-6 * [SECOND]` |
-| `transition: 1s linear` making the seconds dial glide | `[SECOND_MILLISECOND]` instead of `[SECOND]`, which drives a high frame rate |
-| `font-weight: 900` on Comfortaa | `weight="BOLD"` — Comfortaa's axis stops at 700, so browsers were already clamping this |
+| Outer ring: 60 white ticks, labels 0–55 | one static PNG for the ticks, 12 static `PartText` labels |
+| Inner ring: 60 grey ticks | one static PNG |
+| Hour + minute pill | two `PartText`s and a small filled pill PNG; the hour is right-aligned against the pill |
+| Seconds comet (dot, stem, fading tail) | the only moving part: one small cropped PNG inside a full-canvas `Group` rotated by `6 * [SECOND_MILLISECOND]` |
+
+The earlier design rotated a whole tick dial and counter-rotated 12 live labels every
+frame, which looked laggy. Now nothing but the comet moves.
 
 ## Layout
 
@@ -27,12 +31,12 @@ settings.gradle.kts, build.gradle.kts, gradle.properties
 tools/generate.py                <- source of truth for geometry; regenerates assets + XML
 watchface/
   build.gradle.kts
-  COMFORTAA-OFL.txt              <- font license (SIL OFL 1.1)
+  GOOGLE-SANS-FLEX-OFL.txt       <- font license (SIL OFL 1.1)
   src/main/
     AndroidManifest.xml          <- hasCode=false, WFF format version 5
     res/raw/watchface.xml        <- GENERATED — edit generate.py, not this
     res/drawable/                <- GENERATED — ticks_seconds, ticks_minutes, pill, comet, preview
-    res/font/                    <- Google Sans Flex Bold (used); Comfortaa (earlier design)
+    res/font/                    <- Google Sans Flex, static Bold instance
     res/xml/watch_face_info.xml
     res/values/strings.xml
 ```
@@ -44,8 +48,7 @@ design, edit the constants at the top of `tools/generate.py` and re-run it:
 python tools/generate.py
 ```
 
-It needs `pillow` (already installed here). `fonttools` is only needed if you re-cut the
-font weights.
+It needs Python 3 with `pillow` (`python -m pip install pillow`).
 
 ## Build
 
@@ -170,7 +173,7 @@ be a placeholder".
 
 ## Notes
 
-- **The seconds dial glides, and there is a trick keeping it fluid.** By default the runtime
+- **The seconds comet glides, and there is a trick keeping it fluid.** By default the runtime
   presents a watch face at a flat **10.0 fps** — a dead-regular 100 ms cadence on a 60 Hz
   panel, even though a frame costs only 15–34 ms to draw. That throttle is what makes a
   continuously rotating dial look choppy, and it is not something you can optimise away:
@@ -179,9 +182,11 @@ be a placeholder".
   `<Sweep>` is the only explicit frame-rate request in the format, and it is defined for
   `AnalogClock` hands rather than `Group`s. So the face carries an **invisible swept second
   hand** (`alpha="0"`) that draws nothing and exists purely as a hint — and the rate it
-  unlocks applies to the whole surface, so the dials and labels ride along.
+  unlocks applies to the whole surface, so the comet rides along.
 
-  Measured with `dumpsys SurfaceFlinger --latency` on the wallpaper layer, screen on:
+  Measured with `dumpsys SurfaceFlinger --latency` on the wallpaper layer, screen on, with
+  the **earlier rotating-dial design**. The face now uses `frequency="SYNC_TO_DEVICE"`,
+  which has not been measured on the watch yet:
 
   | build | fps | p50 gap | janky |
   |---|---|---|---|
@@ -220,14 +225,14 @@ be a placeholder".
   Read it again with: `adb shell dumpsys batterystats`, then find the UID of
   `com.samsung.wear.watchface.runtime` via `adb shell pm list packages -U` (it renders the
   face; the `radialclock` package itself is inert and will look idle).
-- **Always-on display.** Ambient keeps the whole minutes dial — ticks *and* labels — at
-  alpha 160, with the readouts at 230, so the radial design survives on the AOD. Only the
-  seconds dial goes dark, and that is for correctness rather than power: ambient refreshes
-  once a minute, so a seconds dial would sit frozen on a stale value.
+- **Always-on display.** Ambient keeps the grey inner ring at alpha 160 and the hour and
+  minute pill at 230. The comet goes dark because ambient refreshes once a minute, so it
+  would sit frozen on a stale second; the outer ring goes with it, since without the comet
+  it carries no information.
 
   The quality bar (WO-P7) is 15% **mean luminance** across the face, not a count of lit
-  pixels. This design is nearly all black, so the numbers are not close: the full
-  interactive face is 4.46%, and ambient as configured is **2.63%**. There is no power
+  pixels. With the earlier design the full interactive face measured 4.46% and ambient
+  **2.63%**; the current ambient face shows less, so it is lower still. There is no power
   argument for hiding anything else — tune `AMBIENT_DIAL_ALPHA` / `AMBIENT_TEXT_ALPHA` in
   `generate.py` freely.
 
@@ -276,8 +281,3 @@ be a placeholder".
 Google Sans Flex by the Google Sans Flex Authors, SIL Open Font License 1.1 — see
 [`watchface/GOOGLE-SANS-FLEX-OFL.txt`](watchface/GOOGLE-SANS-FLEX-OFL.txt). This is the face
 the watch face uses; the bundled TTF is a static Bold instance (Latin subset).
-
-Comfortaa (used by the earlier design, still bundled) by the Comfortaa Project Authors, SIL
-Open Font License 1.1 — see
-[`watchface/COMFORTAA-OFL.txt`](watchface/COMFORTAA-OFL.txt). The bundled TTFs are static 400
-and 700 instances cut from the upstream variable font.

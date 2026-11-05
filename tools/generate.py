@@ -54,10 +54,14 @@ MIN_TICK_MINOR_COLOR = (255, 255, 255, 80)
 MIN_TICK_MAJOR_COLOR = (255, 255, 255, 140)
 MIN_IMG = 300
 
-# Hour: right-aligned so one- and two-digit hours both sit snugly against the pill.
-HOUR_RIGHT = 245
+# Hour: always two digits (09, not 9), right-aligned with the mockup's 15px gap to
+# the pill. The mockup's 94px digits only fit a narrow hour like "16"; wide ones
+# ("00", "08", "09") would spill over the inner ring. So the size is the largest up
+# to the mockup's at which EVERY hour 00-23 keeps HOUR_RING_MARGIN clear of it.
+HOUR_RIGHT = 237.5
 HOUR_CY = 227
-HOUR_HEIGHT = 94                    # rendered digit height, px
+HOUR_MAX_HEIGHT = 94                # the mockup's rendered digit height, px
+HOUR_RING_MARGIN = 10               # min gap between hour ink and the inner ring
 
 # Minute pill: a filled, fully closed rounded rectangle.
 PILL_LEFT = 253
@@ -66,20 +70,33 @@ PILL_TOP = 192
 PILL_BOTTOM = 258
 PILL_RADIUS = 20
 PILL_COLOR = (36, 39, 40, 255)      # #242728
-MINUTE_CX = 297
-MINUTE_CY = 223
+# Centred in the pill (the mockup's digits sit ~2px high; centred reads better).
+MINUTE_CX = (PILL_LEFT + PILL_RIGHT) / 2
+MINUTE_CY = (PILL_TOP + PILL_BOTTOM) / 2
 MINUTE_HEIGHT = 38                  # rendered digit height, px
+
+# WFF positions text by font metrics (advance width, line box), not by visible ink,
+# so a PartText box placed at the ink target lands a few px off. These offsets were
+# measured on the emulator and move the boxes so the INK lands on the targets above.
+HOUR_NUDGE = (3.5, 1)              # ink ended 3.6px short of HOUR_RIGHT, 1px high
+MINUTE_NUDGE = (-0.5, 0.5)         # ink sat ~0.5px right and 0.5px high
 
 # Comet (seconds indicator), drawn pointing at 12 o'clock and rotated at runtime.
 COMET_COLOR = (11, 225, 253)        # #0BE1FD
 COMET_TAIL_COLOR = (4, 60, 70)      # dark teal the tail fades into
-COMET_DOT_RADIUS = 170
+# The comet runs along the centre of the gap between the two rings, so the dot has
+# an even margin to both (computed, so it stays centred if either ring moves).
+COMET_TRACK_RADIUS = (MIN_TICK_MAJOR_OUTER + SEC_TICK_INNER) / 2
+COMET_DOT_RADIUS = COMET_TRACK_RADIUS
 COMET_DOT_SIZE = 15
-COMET_LINE_OUTER = 193              # short stem out to the tips of the major ticks
-COMET_LINE_WIDTH = 3
-COMET_TAIL_RADIUS = 168
+COMET_TAIL_RADIUS = COMET_TRACK_RADIUS
 COMET_TAIL_DEGREES = 25
 COMET_TAIL_MAX_WIDTH = 8
+
+# Lit tick: the outer tick for the current second turns cyan as the comet reaches
+# it, stepping once per second. Drawn slightly wider than the white tick so no
+# white fringe shows round its antialiased edges.
+LIT_TICK_EXTRA_WIDTH = 0.8
 
 SS = 4                              # supersampling factor for antialiasing
 
@@ -174,7 +191,32 @@ def fit_font_size(sample: str, digit_height: float) -> int:
 
 
 SEC_NUM_SIZE = fit_font_size("0", SEC_NUM_HEIGHT)
-HOUR_SIZE = fit_font_size("16", HOUR_HEIGHT)
+def hour_ink_radius(size: int) -> float:
+    """Furthest any hour 00-23 reaches from the centre, drawn as the face places it."""
+    f = ImageFont.truetype(FONT_PATH, size)
+    worst = 0.0
+    for h in range(24):
+        text = f"{h:02d}"
+        x0, y0, x1, y1 = f.getbbox(text)
+        mask = f.getmask(text)                      # ink only, origin at (x0, y0)
+        left = HOUR_RIGHT - (x1 - x0)
+        top = HOUR_CY - (y1 - y0) / 2
+        w, hgt = mask.size
+        for my in range(hgt):
+            for mx in range(w):
+                if mask.getpixel((mx, my)) > 64:
+                    worst = max(worst, math.hypot(left + mx - CX, top + my - CY))
+    return worst
+
+
+def fit_hour_size() -> int:
+    size = fit_font_size("16", HOUR_MAX_HEIGHT)
+    while hour_ink_radius(size) > MIN_TICK_INNER - HOUR_RING_MARGIN:
+        size -= 1
+    return size
+
+
+HOUR_SIZE = fit_hour_size()
 MINUTE_SIZE = fit_font_size("42", MINUTE_HEIGHT)
 
 
@@ -241,12 +283,19 @@ def draw_comet(path: str) -> tuple[int, int, int, int]:
         d.ellipse([x * SS - r, y * SS - r, x * SS + r, y * SS + r], fill=color + (alpha,))
 
     x0, y0 = polar(COMET_DOT_RADIUS, 0)
-    x1, y1 = polar(COMET_LINE_OUTER, 0)
-    d.line([x0 * SS, y0 * SS, x1 * SS, y1 * SS], fill=COMET_COLOR + (255,),
-           width=COMET_LINE_WIDTH * SS)
     r = COMET_DOT_SIZE / 2 * SS
     d.ellipse([x0 * SS - r, y0 * SS - r, x0 * SS + r, y0 * SS + r], fill=COMET_COLOR + (255,))
 
+    return save_cropped(img, path)
+
+
+def draw_lit_tick(path: str, outer: float, width: float) -> tuple[int, int, int, int]:
+    """A cyan copy of one outer tick at 12 o'clock, rotated to the current second at runtime."""
+    img = Image.new("RGBA", (SIZE * SS, SIZE * SS), (0, 0, 0, 0))
+    x0, y0 = polar(SEC_TICK_INNER, 0)
+    x1, y1 = polar(outer, 0)
+    ImageDraw.Draw(img).line([x0 * SS, y0 * SS, x1 * SS, y1 * SS], fill=COMET_COLOR + (255,),
+                             width=round((width + LIT_TICK_EXTRA_WIDTH) * SS))
     return save_cropped(img, path)
 
 
@@ -258,7 +307,8 @@ def draw_blank(path: str) -> None:
 
 def draw_preview(path: str, hour: int, minute: int, second: int,
                  pill_box: tuple[int, int, int, int],
-                 comet_box: tuple[int, int, int, int]) -> None:
+                 comet_box: tuple[int, int, int, int],
+                 lit_boxes: dict[str, tuple[int, int, int, int]]) -> None:
     """A static render of the face for the watch face picker."""
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 255))
 
@@ -267,10 +317,15 @@ def draw_preview(path: str, hour: int, minute: int, second: int,
         off = int((SIZE - box) / 2)
         img.alpha_composite(layer, (off, off))
 
-    comet = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    comet.alpha_composite(Image.open(os.path.join(DRAWABLE, "comet.png")).convert("RGBA"),
-                          comet_box[:2])
-    img.alpha_composite(comet.rotate(-6 * second, resample=Image.BICUBIC))
+    def rotated(name: str, box: tuple[int, int, int, int], degrees: float) -> Image.Image:
+        layer = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+        layer.alpha_composite(Image.open(os.path.join(DRAWABLE, name + ".png")).convert("RGBA"),
+                              box[:2])
+        return layer.rotate(-degrees, resample=Image.BICUBIC)
+
+    lit = "tick_lit_major" if second % 5 == 0 else "tick_lit_minor"
+    img.alpha_composite(rotated(lit, lit_boxes[lit], 6 * second))
+    img.alpha_composite(rotated("comet", comet_box, 6 * second))
 
     img.alpha_composite(Image.open(os.path.join(DRAWABLE, "pill.png")).convert("RGBA"),
                         pill_box[:2])
@@ -287,8 +342,8 @@ def draw_preview(path: str, hour: int, minute: int, second: int,
         centred(str(i), *polar(SEC_NUM_RADIUS, 6 * i), SEC_NUM_SIZE)
 
     f = ImageFont.truetype(FONT_PATH, HOUR_SIZE)
-    box = d.textbbox((0, 0), str(hour), font=f)
-    d.text((HOUR_RIGHT - box[2], HOUR_CY - (box[1] + box[3]) / 2), str(hour), font=f,
+    box = d.textbbox((0, 0), f"{hour:02d}", font=f)
+    d.text((HOUR_RIGHT - box[2], HOUR_CY - (box[1] + box[3]) / 2), f"{hour:02d}", font=f,
            fill=(255, 255, 255, 255))
 
     centred(f"{minute:02d}", MINUTE_CX, MINUTE_CY, MINUTE_SIZE)
@@ -324,7 +379,23 @@ def centred_image(name: str, resource: str, box: int, indent: str) -> str:
 {indent}</PartImage>"""
 
 
-def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, int, int]) -> str:
+# 0 on a five-second mark (0, 5, 10...), 1 on every other second. Deliberately pure
+# arithmetic: on this watch's v1 runtime an expression using a comparison
+# ("[SECOND] % 5 == 0 ? 255 : 0") silently froze the whole face after its first frame.
+OFF_FIVE = "floor(([SECOND] % 5 + 4) / 5)"
+
+
+def lit_tick_image(name: str, box: tuple[int, int, int, int], alpha: str,
+                   indent: str) -> str:
+    return f"""{indent}<PartImage name="{name}" x="{box[0]}" y="{box[1]}"
+{indent}           width="{box[2] - box[0]}" height="{box[3] - box[1]}">
+{indent}  <Transform target="alpha" value="{alpha}" />
+{indent}  <Image resource="{name}" />
+{indent}</PartImage>"""
+
+
+def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, int, int],
+              lit_boxes: dict[str, tuple[int, int, int, int]]) -> str:
     hour_box_w = 220
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <!--
@@ -351,7 +422,17 @@ def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, in
 {centred_image("minutes_ticks", "ticks_minutes", MIN_IMG, "      ")}
     </Group>
 
-    <!-- The comet: the only moving part. A small cropped image inside a full-canvas
+    <!-- Lit tick: the outer tick for the current second turns cyan, stepping once a
+         second as the comet reaches it. Long tick on 0, 5, 10..., short otherwise. -->
+    <Group name="lit_tick" x="0" y="0" width="{SIZE}" height="{SIZE}"
+           pivotX="0.5" pivotY="0.5">
+      <Variant mode="AMBIENT" target="alpha" value="0" />
+      <Transform target="angle" value="6 * [SECOND]" />
+{lit_tick_image("tick_lit_major", lit_boxes["tick_lit_major"], f"255 - 255 * {OFF_FIVE}", "      ")}
+{lit_tick_image("tick_lit_minor", lit_boxes["tick_lit_minor"], f"255 * {OFF_FIVE}", "      ")}
+    </Group>
+
+    <!-- The comet: the only continuously moving part. A small cropped image inside a full-canvas
          Group, so the rotation pivots on the face centre but only the comet's own
          pixels are composited each frame. -->
     <Group name="seconds_comet" x="0" y="0" width="{SIZE}" height="{SIZE}"
@@ -366,12 +447,12 @@ def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, in
 
     <!-- Hour, right-aligned against the minute pill. Follows the wearer's
          12/24-hour setting. -->
-    <PartText name="hour" x="{HOUR_RIGHT - hour_box_w}" y="{round(HOUR_CY - 70)}"
+    <PartText name="hour" x="{round(HOUR_RIGHT + HOUR_NUDGE[0]) - hour_box_w}" y="{round(HOUR_CY + HOUR_NUDGE[1] - 70)}"
               width="{hour_box_w}" height="140">
       <Variant mode="AMBIENT" target="alpha" value="{AMBIENT_TEXT_ALPHA}" />
       <Text align="END">
         <Font family="{FONT_FAMILY}" size="{HOUR_SIZE}" weight="BOLD" color="#ffffff">
-          <Template>%d<Parameter expression="[IS_24_HOUR_MODE] ? [HOUR_0_23] : [HOUR_1_12]" /></Template>
+          <Template>%02d<Parameter expression="[IS_24_HOUR_MODE] ? [HOUR_0_23] : [HOUR_1_12]" /></Template>
         </Font>
       </Text>
     </PartText>
@@ -382,7 +463,7 @@ def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, in
       <Image resource="pill" />
     </PartImage>
 
-    <PartText name="minute" x="{MINUTE_CX - 45}" y="{MINUTE_CY - 35}"
+    <PartText name="minute" x="{round(MINUTE_CX + MINUTE_NUDGE[0]) - 45}" y="{round(MINUTE_CY + MINUTE_NUDGE[1]) - 35}"
               width="90" height="70">
       <Variant mode="AMBIENT" target="alpha" value="{AMBIENT_TEXT_ALPHA}" />
       <Text align="CENTER">
@@ -448,12 +529,18 @@ def main() -> None:
               MIN_TICK_MINOR_COLOR, MIN_TICK_MAJOR_COLOR)
     pill_box = draw_pill(os.path.join(DRAWABLE, "pill.png"))
     comet_box = draw_comet(os.path.join(DRAWABLE, "comet.png"))
+    lit_boxes = {
+        "tick_lit_major": draw_lit_tick(os.path.join(DRAWABLE, "tick_lit_major.png"),
+                                        SEC_TICK_MAJOR_OUTER, SEC_TICK_MAJOR_WIDTH),
+        "tick_lit_minor": draw_lit_tick(os.path.join(DRAWABLE, "tick_lit_minor.png"),
+                                        SEC_TICK_MINOR_OUTER, SEC_TICK_MINOR_WIDTH),
+    }
     draw_blank(os.path.join(DRAWABLE, "blank.png"))
-    draw_preview(os.path.join(DRAWABLE, "preview.png"), *PREVIEW_TIME, pill_box, comet_box)
+    draw_preview(os.path.join(DRAWABLE, "preview.png"), *PREVIEW_TIME, pill_box, comet_box, lit_boxes)
 
     xml_path = os.path.join(RAW, "watchface.xml")
     with open(xml_path, "w", encoding="utf-8") as f:
-        f.write(build_xml(pill_box, comet_box))
+        f.write(build_xml(pill_box, comet_box, lit_boxes))
     print(f"\nwatchface.xml written to {os.path.relpath(xml_path, HERE)}")
 
 
