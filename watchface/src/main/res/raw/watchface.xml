@@ -6,7 +6,7 @@
 <WatchFace width="450" height="450" clipShape="CIRCLE">
 
   <Metadata key="CLOCK_TYPE" value="DIGITAL" />
-  <Metadata key="PREVIEW_TIME" value="12:48:27" />
+  <Metadata key="PREVIEW_TIME" value="16:42:10" />
 
   <Scene backgroundColor="#000000">
 
@@ -16,268 +16,146 @@
       <Transform target="x" value="[MINUTE] % 5 - 2" />
       <Transform target="y" value="floor([MINUTE] / 5) % 5 - 2" />
 
-    <!-- Outer dial: ticks and labels are static. Only the small seconds
-         indicator below animates, which keeps the continuous motion lightweight. -->
-    <Group name="seconds_ticks" x="0" y="0" width="450" height="450"
-           pivotX="0.5" pivotY="0.5">
+    <!-- Outer ring: static ticks and labels. Hidden in ambient along with the comet. -->
+    <Group name="outer_ring" x="0" y="0" width="450" height="450">
       <Variant mode="AMBIENT" target="alpha" value="0" />
-      <PartImage name="seconds_tick_image"
-                 x="5" y="5"
-                 width="440" height="440">
+      <PartImage name="seconds_ticks" x="29" y="29" width="392" height="392">
         <Image resource="ticks_seconds" />
       </PartImage>
-    </Group>
-
-    <PartDraw name="seconds_indicator" x="0" y="0" width="450" height="450"
-              pivotX="0.5" pivotY="0.5">
-      <Variant mode="AMBIENT" target="alpha" value="0" />
-      <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
-      <Arc centerX="225" centerY="225" width="420" height="420"
-           startAngle="-18" endAngle="-6">
-        <Stroke cap="ROUND" color="#168CA6" thickness="6" />
-      </Arc>
-      <Arc centerX="225" centerY="225" width="420" height="420"
-           startAngle="-6" endAngle="0">
-        <Stroke cap="ROUND" color="#30D7FF" thickness="6" />
-      </Arc>
-      <Ellipse x="217" y="7" width="16" height="16">
-        <Fill color="#30D7FF" />
-      </Ellipse>
-    </PartDraw>
-
-    <Group name="seconds_labels" x="0" y="0" width="450" height="450">
-      <Variant mode="AMBIENT" target="alpha" value="0" />
       <PartText name="second_label_0"
-                x="375" y="208"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="207" y="4"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">0</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">0</Font>
         </Text>
       </PartText>
       <PartText name="second_label_5"
-                x="351" y="297"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="310" y="32"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">5</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">5</Font>
         </Text>
       </PartText>
       <PartText name="second_label_10"
-                x="286" y="362"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="385" y="107"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">10</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">10</Font>
         </Text>
       </PartText>
       <PartText name="second_label_15"
-                x="197" y="386"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="413" y="210"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">15</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">15</Font>
         </Text>
       </PartText>
       <PartText name="second_label_20"
-                x="108" y="362"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="385" y="313"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">20</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">20</Font>
         </Text>
       </PartText>
       <PartText name="second_label_25"
-                x="43" y="297"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="310" y="388"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">25</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">25</Font>
         </Text>
       </PartText>
       <PartText name="second_label_30"
-                x="19" y="208"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="207" y="416"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">30</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">30</Font>
         </Text>
       </PartText>
       <PartText name="second_label_35"
-                x="43" y="119"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="104" y="388"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">35</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">35</Font>
         </Text>
       </PartText>
       <PartText name="second_label_40"
-                x="108" y="54"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="29" y="313"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">40</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">40</Font>
         </Text>
       </PartText>
       <PartText name="second_label_45"
-                x="197" y="30"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="1" y="210"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">45</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">45</Font>
         </Text>
       </PartText>
       <PartText name="second_label_50"
-                x="286" y="54"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="29" y="107"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">50</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">50</Font>
         </Text>
       </PartText>
       <PartText name="second_label_55"
-                x="351" y="119"
-                width="56" height="34" pivotX="0.5" pivotY="0.5">
+                x="104" y="32"
+                width="36" height="30">
         <Text align="CENTER">
-          <Font family="comfortaa" size="25" weight="BOLD" color="#ffffff">55</Font>
+          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">55</Font>
         </Text>
       </PartText>
     </Group>
 
-    <!-- Inner dial: minutes.  This whole dial stays visible in ambient: it advances
-         once a minute, which is exactly the ambient refresh rate, so it stays
-         accurate and keeps the radial design legible on the always-on display. -->
-    <Group name="minutes_dial" x="0" y="0" width="450" height="450"
-           pivotX="0.5" pivotY="0.5">
-      <Transform target="angle" value="-6 * [MINUTE]" />
-
-      <PartImage name="minutes_ticks"
-                 x="70" y="70"
-                 width="310" height="310">
-        <Variant mode="AMBIENT" target="alpha" value="160" />
+    <!-- Inner ring: static grey ticks, kept (dimmed) in ambient. -->
+    <Group name="inner_ring" x="0" y="0" width="450" height="450">
+      <Variant mode="AMBIENT" target="alpha" value="160" />
+      <PartImage name="minutes_ticks" x="75" y="75" width="300" height="300">
         <Image resource="ticks_minutes" />
       </PartImage>
-
-      <Group name="minutes_labels" x="0" y="0" width="450" height="450">
-        <Variant mode="AMBIENT" target="alpha" value="160" />
-
-        <PartText name="minute_label_0"
-                  x="313" y="210"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">0</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_5"
-                  x="298" y="266"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">5</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_10"
-                  x="257" y="307"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">10</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_15"
-                  x="201" y="322"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">15</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_20"
-                  x="145" y="307"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">20</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_25"
-                  x="104" y="266"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">25</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_30"
-                  x="89" y="210"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">30</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_35"
-                  x="104" y="154"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">35</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_40"
-                  x="145" y="113"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">40</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_45"
-                  x="201" y="98"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">45</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_50"
-                  x="257" y="113"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">50</Font>
-          </Text>
-        </PartText>
-        <PartText name="minute_label_55"
-                  x="298" y="154"
-                  width="48" height="30" pivotX="0.5" pivotY="0.5">
-          <Transform target="angle" value="6 * [MINUTE]" />
-          <Text align="CENTER">
-            <Font family="comfortaa" size="23" weight="NORMAL" color="#ffffff">55</Font>
-          </Text>
-        </PartText>
-      </Group>
     </Group>
 
-    <!-- Centre hour readout. The web version hardcodes getHours(), i.e. 24-hour;
-         on a watch it is better to follow whatever the wearer has set. -->
-    <PartText name="hour" x="0" y="155" width="450" height="140">
+    <!-- The comet: the only moving part. A small cropped image inside a full-canvas
+         Group, so the rotation pivots on the face centre but only the comet's own
+         pixels are composited each frame. -->
+    <Group name="seconds_comet" x="0" y="0" width="450" height="450"
+           pivotX="0.5" pivotY="0.5">
+      <Variant mode="AMBIENT" target="alpha" value="0" />
+      <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
+      <PartImage name="comet" x="153" y="29"
+                 width="82" height="46">
+        <Image resource="comet" />
+      </PartImage>
+    </Group>
+
+    <!-- Hour, right-aligned against the minute pill. Follows the wearer's
+         12/24-hour setting. -->
+    <PartText name="hour" x="25" y="157"
+              width="220" height="140">
       <Variant mode="AMBIENT" target="alpha" value="230" />
-      <Text align="CENTER">
-        <Font family="comfortaa" size="88" weight="BOLD" color="#ffffff">
+      <Text align="END">
+        <Font family="google_sans_flex" size="123" weight="BOLD" color="#ffffff">
           <Template>%d<Parameter expression="[IS_24_HOUR_MODE] ? [HOUR_0_23] : [HOUR_1_12]" /></Template>
         </Font>
       </Text>
     </PartText>
 
-    <!-- Minute capsule on the right rim, drawn over the dials. Cropped to its own
-         bounds rather than a full-canvas layer, since this composites every frame. -->
-    <PartImage name="pill" x="278" y="193"
-               width="154" height="64">
+    <PartImage name="pill" x="250" y="189"
+               width="95" height="72">
       <Variant mode="AMBIENT" target="alpha" value="230" />
       <Image resource="pill" />
     </PartImage>
 
-    <PartText name="minute" x="267" y="190"
+    <PartText name="minute" x="252" y="188"
               width="90" height="70">
       <Variant mode="AMBIENT" target="alpha" value="230" />
       <Text align="CENTER">
-        <Font family="comfortaa" size="46" weight="BOLD" color="#ffffff">
+        <Font family="google_sans_flex" size="52" weight="BOLD" color="#ffffff">
           <Template>%02d<Parameter expression="[MINUTE]" /></Template>
         </Font>
       </Text>
     </PartText>
-
 
     <AnalogClock x="0" y="0" width="450" height="450">
       <SecondHand resource="blank" x="224" y="120" width="2" height="105"

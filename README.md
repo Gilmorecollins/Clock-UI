@@ -31,8 +31,8 @@ watchface/
   src/main/
     AndroidManifest.xml          <- hasCode=false, WFF format version 5
     res/raw/watchface.xml        <- GENERATED — edit generate.py, not this
-    res/drawable/                <- GENERATED — ticks_seconds, ticks_minutes, pill, preview
-    res/font/                    <- Comfortaa, cut to static 400/700 instances
+    res/drawable/                <- GENERATED — ticks_seconds, ticks_minutes, pill, comet, preview
+    res/font/                    <- Google Sans Flex Bold (used); Comfortaa (earlier design)
     res/xml/watch_face_info.xml
     res/values/strings.xml
 ```
@@ -273,6 +273,11 @@ be a placeholder".
 
 ## Third-party
 
-Comfortaa by the Comfortaa Project Authors, SIL Open Font License 1.1 — see
+Google Sans Flex by the Google Sans Flex Authors, SIL Open Font License 1.1 — see
+[`watchface/GOOGLE-SANS-FLEX-OFL.txt`](watchface/GOOGLE-SANS-FLEX-OFL.txt). This is the face
+the watch face uses; the bundled TTF is a static Bold instance (Latin subset).
+
+Comfortaa (used by the earlier design, still bundled) by the Comfortaa Project Authors, SIL
+Open Font License 1.1 — see
 [`watchface/COMFORTAA-OFL.txt`](watchface/COMFORTAA-OFL.txt). The bundled TTFs are static 400
 and 700 instances cut from the upstream variable font.
