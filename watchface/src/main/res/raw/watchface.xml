@@ -116,27 +116,45 @@
       </PartImage>
     </Group>
 
-    <!-- The comet: the only moving part. A small cropped image inside a full-canvas
+    <!-- Lit tick: the outer tick for the current second turns cyan, stepping once a
+         second as the comet reaches it. Long tick on 0, 5, 10..., short otherwise. -->
+    <Group name="lit_tick" x="0" y="0" width="450" height="450"
+           pivotX="0.5" pivotY="0.5">
+      <Variant mode="AMBIENT" target="alpha" value="0" />
+      <Transform target="angle" value="6 * [SECOND]" />
+      <PartImage name="tick_lit_major" x="220" y="29"
+                 width="10" height="23">
+        <Transform target="alpha" value="255 - 255 * floor(([SECOND] % 5 + 4) / 5)" />
+        <Image resource="tick_lit_major" />
+      </PartImage>
+      <PartImage name="tick_lit_minor" x="221" y="36"
+                 width="8" height="16">
+        <Transform target="alpha" value="255 * floor(([SECOND] % 5 + 4) / 5)" />
+        <Image resource="tick_lit_minor" />
+      </PartImage>
+    </Group>
+
+    <!-- The comet: the only continuously moving part. A small cropped image inside a full-canvas
          Group, so the rotation pivots on the face centre but only the comet's own
          pixels are composited each frame. -->
     <Group name="seconds_comet" x="0" y="0" width="450" height="450"
            pivotX="0.5" pivotY="0.5">
       <Variant mode="AMBIENT" target="alpha" value="0" />
       <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
-      <PartImage name="comet" x="153" y="29"
-                 width="82" height="46">
+      <PartImage name="comet" x="155" y="53"
+                 width="80" height="28">
         <Image resource="comet" />
       </PartImage>
     </Group>
 
     <!-- Hour, right-aligned against the minute pill. Follows the wearer's
          12/24-hour setting. -->
-    <PartText name="hour" x="25" y="157"
+    <PartText name="hour" x="21" y="158"
               width="220" height="140">
       <Variant mode="AMBIENT" target="alpha" value="230" />
       <Text align="END">
-        <Font family="google_sans_flex" size="123" weight="BOLD" color="#ffffff">
-          <Template>%d<Parameter expression="[IS_24_HOUR_MODE] ? [HOUR_0_23] : [HOUR_1_12]" /></Template>
+        <Font family="google_sans_flex" size="107" weight="BOLD" color="#ffffff">
+          <Template>%02d<Parameter expression="[IS_24_HOUR_MODE] ? [HOUR_0_23] : [HOUR_1_12]" /></Template>
         </Font>
       </Text>
     </PartText>
@@ -147,7 +165,7 @@
       <Image resource="pill" />
     </PartImage>
 
-    <PartText name="minute" x="252" y="188"
+    <PartText name="minute" x="252" y="191"
               width="90" height="70">
       <Variant mode="AMBIENT" target="alpha" value="230" />
       <Text align="CENTER">
