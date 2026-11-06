@@ -105,6 +105,11 @@ COMET_TAIL_MAX_WIDTH = 8
 # white fringe shows round its antialiased edges.
 LIT_TICK_EXTRA_WIDTH = 0.8
 
+# Label glow: each second label (0, 5, 10...) flashes the comet's colour as the
+# comet reaches it, then fades back to white over this many seconds. At 5 a label
+# has just faded out as the comet lights the next one.
+LABEL_GLOW_SECONDS = 5
+
 SS = 4                              # supersampling factor for antialiasing
 
 # SECOND_MILLISECOND makes the comet glide continuously instead of ticking. Set it
@@ -379,14 +384,24 @@ def draw_preview(path: str, hour: int, minute: int, second: int,
 
     d = ImageDraw.Draw(img)
 
-    def centred(text: str, cx: float, cy: float, size: int) -> None:
+    def centred(text: str, cx: float, cy: float, size: int,
+                fill: tuple = (255, 255, 255, 255), draw: ImageDraw.ImageDraw | None = None) -> None:
+        draw = draw or d
         f = ImageFont.truetype(FONT_PATH, size)
-        box = d.textbbox((0, 0), text, font=f)
-        d.text((cx - (box[0] + box[2]) / 2, cy - (box[1] + box[3]) / 2), text, font=f,
-               fill=(255, 255, 255, 255))
+        box = draw.textbbox((0, 0), text, font=f)
+        draw.text((cx - (box[0] + box[2]) / 2, cy - (box[1] + box[3]) / 2), text, font=f,
+                  fill=fill)
 
     for i in range(0, 60, 5):
-        centred(str(i), *polar(SEC_NUM_RADIUS, 6 * i), SEC_NUM_SIZE)
+        xy = polar(SEC_NUM_RADIUS, 6 * i)
+        centred(str(i), *xy, SEC_NUM_SIZE)
+        # The glow as the watch draws it at this second: a cyan copy blended on top.
+        k = label_glow(i, second)
+        if k > 0:
+            layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+            centred(str(i), *xy, SEC_NUM_SIZE, COMET_COLOR + (255,), ImageDraw.Draw(layer))
+            layer.putalpha(layer.getchannel("A").point(lambda v: round(v * k)))
+            img.alpha_composite(layer)
 
     f = ImageFont.truetype(FONT_PATH, HOUR_SIZE)
     box = d.textbbox((0, 0), f"{hour:02d}", font=f)
@@ -403,17 +418,46 @@ def draw_preview(path: str, hour: int, minute: int, second: int,
 # watchface.xml
 # --------------------------------------------------------------------------
 
+def label_glow(label: int, second: float) -> float:
+    """Glow strength 0..1 of a second label: 1 as the comet arrives, fading to 0.
+
+    The Python twin of label_glow_expr(), used for the preview.
+    """
+    since = (second - label + 60) % 60
+    lit = 1 - math.floor((since + 60 - LABEL_GLOW_SECONDS) / 60)
+    return lit * (1 - since / LABEL_GLOW_SECONDS)
+
+
+def label_glow_expr(label: int) -> str:
+    """WFF alpha expression for a label's glow copy.
+
+    `since` is how long ago the comet passed the label, 0..60s. floor((since + 60 -
+    G) / 60) is 0 while since < G and 1 after, so the glow is on only for the first
+    G seconds, ramping 255 -> 0. Pure arithmetic: on this watch's v1 runtime a
+    comparison operator froze the face (see OFF_FIVE).
+    """
+    g = LABEL_GLOW_SECONDS
+    since = f"(([{SECONDS_SOURCE}] - {label} + 60) % 60)"
+    return f"255 * (1 - floor(({since} + {60 - g}) / 60)) * (1 - {since} / {g})"
+
+
 def second_labels(indent: str) -> str:
-    """One static PartText per 5-second label, 0 at 12 o'clock."""
+    """One static PartText per 5-second label, 0 at 12 o'clock, each with a cyan
+    copy on top that glows as the comet passes (label_glow_expr)."""
     box_w, box_h = 36, 30
+    comet_hex = "#{:02x}{:02x}{:02x}".format(*COMET_COLOR)
     out = []
     for i in range(0, 60, 5):
         x, y = polar(SEC_NUM_RADIUS, 6 * i)
-        out.append(f"""{indent}<PartText name="second_label_{i}"
+        for name, color, alpha in ((f"second_label_{i}", DIAL_TEXT, None),
+                                   (f"second_label_{i}_glow", comet_hex, label_glow_expr(i))):
+            transform = (f'\n{indent}  <Transform target="alpha" value="{alpha}" />'
+                         if alpha else "")
+            out.append(f"""{indent}<PartText name="{name}"
 {indent}          x="{round(x - box_w / 2)}" y="{round(y - box_h / 2)}"
-{indent}          width="{box_w}" height="{box_h}">
+{indent}          width="{box_w}" height="{box_h}">{transform}
 {indent}  <Text align="CENTER">
-{indent}    <Font family="{FONT_FAMILY}" size="{SEC_NUM_SIZE}" weight="BOLD" color="{DIAL_TEXT}">{i}</Font>
+{indent}    <Font family="{FONT_FAMILY}" size="{SEC_NUM_SIZE}" weight="BOLD" color="{color}">{i}</Font>
 {indent}  </Text>
 {indent}</PartText>""")
     return "\n".join(out)

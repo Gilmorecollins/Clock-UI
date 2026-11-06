@@ -27,11 +27,27 @@
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">0</Font>
         </Text>
       </PartText>
+      <PartText name="second_label_0_glow"
+                x="207" y="28"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 0 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 0 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">0</Font>
+        </Text>
+      </PartText>
       <PartText name="second_label_5"
                 x="298" y="52"
                 width="36" height="30">
         <Text align="CENTER">
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">5</Font>
+        </Text>
+      </PartText>
+      <PartText name="second_label_5_glow"
+                x="298" y="52"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 5 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 5 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">5</Font>
         </Text>
       </PartText>
       <PartText name="second_label_10"
@@ -41,11 +57,27 @@
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">10</Font>
         </Text>
       </PartText>
+      <PartText name="second_label_10_glow"
+                x="365" y="119"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 10 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 10 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">10</Font>
+        </Text>
+      </PartText>
       <PartText name="second_label_15"
                 x="389" y="210"
                 width="36" height="30">
         <Text align="CENTER">
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">15</Font>
+        </Text>
+      </PartText>
+      <PartText name="second_label_15_glow"
+                x="389" y="210"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 15 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 15 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">15</Font>
         </Text>
       </PartText>
       <PartText name="second_label_20"
@@ -55,11 +87,27 @@
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">20</Font>
         </Text>
       </PartText>
+      <PartText name="second_label_20_glow"
+                x="365" y="301"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 20 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 20 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">20</Font>
+        </Text>
+      </PartText>
       <PartText name="second_label_25"
                 x="298" y="368"
                 width="36" height="30">
         <Text align="CENTER">
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">25</Font>
+        </Text>
+      </PartText>
+      <PartText name="second_label_25_glow"
+                x="298" y="368"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 25 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 25 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">25</Font>
         </Text>
       </PartText>
       <PartText name="second_label_30"
@@ -69,11 +117,27 @@
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">30</Font>
         </Text>
       </PartText>
+      <PartText name="second_label_30_glow"
+                x="207" y="392"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 30 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 30 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">30</Font>
+        </Text>
+      </PartText>
       <PartText name="second_label_35"
                 x="116" y="368"
                 width="36" height="30">
         <Text align="CENTER">
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">35</Font>
+        </Text>
+      </PartText>
+      <PartText name="second_label_35_glow"
+                x="116" y="368"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 35 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 35 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">35</Font>
         </Text>
       </PartText>
       <PartText name="second_label_40"
@@ -83,11 +147,27 @@
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">40</Font>
         </Text>
       </PartText>
+      <PartText name="second_label_40_glow"
+                x="49" y="301"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 40 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 40 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">40</Font>
+        </Text>
+      </PartText>
       <PartText name="second_label_45"
                 x="25" y="210"
                 width="36" height="30">
         <Text align="CENTER">
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">45</Font>
+        </Text>
+      </PartText>
+      <PartText name="second_label_45_glow"
+                x="25" y="210"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 45 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 45 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">45</Font>
         </Text>
       </PartText>
       <PartText name="second_label_50"
@@ -97,11 +177,27 @@
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">50</Font>
         </Text>
       </PartText>
+      <PartText name="second_label_50_glow"
+                x="49" y="119"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 50 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 50 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">50</Font>
+        </Text>
+      </PartText>
       <PartText name="second_label_55"
                 x="116" y="52"
                 width="36" height="30">
         <Text align="CENTER">
           <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">55</Font>
+        </Text>
+      </PartText>
+      <PartText name="second_label_55_glow"
+                x="116" y="52"
+                width="36" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(((([SECOND_MILLISECOND] - 55 + 60) % 60) + 55) / 60)) * (1 - (([SECOND_MILLISECOND] - 55 + 60) % 60) / 5)" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#0be1fd">55</Font>
         </Text>
       </PartText>
     </Group>
