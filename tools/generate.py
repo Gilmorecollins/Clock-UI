@@ -32,27 +32,38 @@ CX = CY = SIZE / 2
 
 DIAL_TEXT = "#ffffff"
 
-# Outer ring: seconds.  Every tick starts at the same inner radius; the five-second
-# ticks reach further out and are thicker.
-SEC_TICK_INNER = 176
-SEC_TICK_MINOR_OUTER = 186
-SEC_TICK_MAJOR_OUTER = 193
-SEC_TICK_MINOR_WIDTH = 2.0
-SEC_TICK_MAJOR_WIDTH = 3.2
+# Outer ring: seconds, in "bezel" style. The ticks run right out to the screen
+# edge and the labels sit just inside them. (The original mockup had the labels
+# outside the ticks, but then the labels hold the edge and the face can't fill
+# a small round screen: on the 40mm Galaxy Watch 4 it left a black band.)
+# Every tick hangs inward from the same outer circle, so the face's silhouette is
+# one clean circle; the five-second ticks reach further in and are thicker.
+# (Staggered tips -- long ticks to the edge, short ones stopping short -- made the
+# edge read as a jagged polygon.) The outer circle sits a few units inside the
+# canvas so the round panel never crops it.
+SEC_TICK_OUTER = 220
+SEC_TICK_MINOR_INNER = 209
+SEC_TICK_MAJOR_INNER = 200
+SEC_TICK_MINOR_WIDTH = 2.4
+SEC_TICK_MAJOR_WIDTH = 4.5
 SEC_TICK_COLOR = (255, 255, 255, 240)
-SEC_NUM_RADIUS = 206
-SEC_NUM_HEIGHT = 15                 # rendered digit height, px
-SEC_IMG = 392                       # tick image is cropped to the annulus it needs
+# A thin continuous circle through the ticks' outer ends. Separate dashes alone
+# read as a 60-sided polygon round the edge; the line makes the bezel feel round.
+SEC_TRACK_WIDTH = 1.5
+SEC_TRACK_COLOR = (255, 255, 255, 90)
+SEC_NUM_RADIUS = 182
+SEC_NUM_HEIGHT = 17                 # rendered digit height, px
+SEC_IMG = 450                       # ticks reach the edge, so the full canvas
 
 # Inner ring: plain grey ticks, no labels.
-MIN_TICK_INNER = 134
-MIN_TICK_MINOR_OUTER = 143
-MIN_TICK_MAJOR_OUTER = 147
+MIN_TICK_INNER = 132
+MIN_TICK_MINOR_OUTER = 141
+MIN_TICK_MAJOR_OUTER = 146
 MIN_TICK_MINOR_WIDTH = 2.0
 MIN_TICK_MAJOR_WIDTH = 2.4
 MIN_TICK_MINOR_COLOR = (255, 255, 255, 80)
 MIN_TICK_MAJOR_COLOR = (255, 255, 255, 140)
-MIN_IMG = 300
+MIN_IMG = 294
 
 # Hour: always two digits (09, not 9), right-aligned with the mockup's 15px gap to
 # the pill. The mockup's 94px digits only fit a narrow hour like "16"; wide ones
@@ -84,12 +95,10 @@ MINUTE_NUDGE = (-0.5, 0.5)         # ink sat ~0.5px right and 0.5px high
 # Comet (seconds indicator), drawn pointing at 12 o'clock and rotated at runtime.
 COMET_COLOR = (11, 225, 253)        # #0BE1FD
 COMET_TAIL_COLOR = (4, 60, 70)      # dark teal the tail fades into
-# The comet runs along the centre of the gap between the two rings, so the dot has
-# an even margin to both (computed, so it stays centred if either ring moves).
-COMET_TRACK_RADIUS = (MIN_TICK_MAJOR_OUTER + SEC_TICK_INNER) / 2
-COMET_DOT_RADIUS = COMET_TRACK_RADIUS
+# The comet runs along the centre of the gap between the inner ring and the second
+# labels, so the dot has an even margin to both. Computed after the fonts are sized
+# (see comet_track_radius) so it stays centred if either moves.
 COMET_DOT_SIZE = 15
-COMET_TAIL_RADIUS = COMET_TRACK_RADIUS
 COMET_TAIL_DEGREES = 25
 COMET_TAIL_MAX_WIDTH = 8
 
@@ -219,6 +228,25 @@ def fit_hour_size() -> int:
 HOUR_SIZE = fit_hour_size()
 MINUTE_SIZE = fit_font_size("42", MINUTE_HEIGHT)
 
+def label_inner_radius() -> float:
+    """Closest any second label's ink box comes to the centre."""
+    f = ImageFont.truetype(FONT_PATH, SEC_NUM_SIZE)
+    nearest = float(SEC_NUM_RADIUS)
+    for i in range(0, 60, 5):
+        x, y = polar(SEC_NUM_RADIUS, 6 * i)
+        x0, y0, x1, y1 = f.getbbox(str(i))
+        hw, hh = (x1 - x0) / 2, (y1 - y0) / 2
+        # Nearest point of the label's box to the centre.
+        nx = max(abs(x - CX) - hw, 0)
+        ny = max(abs(y - CY) - hh, 0)
+        nearest = min(nearest, math.hypot(nx, ny))
+    return nearest
+
+
+COMET_TRACK_RADIUS = (MIN_TICK_MAJOR_OUTER + label_inner_radius()) / 2
+COMET_DOT_RADIUS = COMET_TRACK_RADIUS
+COMET_TAIL_RADIUS = COMET_TRACK_RADIUS
+
 
 def save_cropped(img_ss: Image.Image, path: str) -> tuple[int, int, int, int]:
     """Downsample a supersampled full-canvas layer, crop it to its content, save it.
@@ -234,23 +262,53 @@ def save_cropped(img_ss: Image.Image, path: str) -> tuple[int, int, int, int]:
     return box
 
 
-def draw_ring(path: str, box: int, inner: float, minor_outer: float, major_outer: float,
+def rounded_line(d: ImageDraw.ImageDraw, p0: tuple[float, float], p1: tuple[float, float],
+                 width: float, fill: tuple) -> None:
+    """A line with round caps (ImageDraw only draws square ends). Coordinates in SS px.
+
+    p0 and p1 are where the INK ends, caps included: the centreline is shortened by
+    half the width at each end. Otherwise wide ticks overshoot narrow ones by the
+    difference in their cap radii and the tips no longer meet a common circle.
+    """
+    r = width / 2
+    length = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+    ux, uy = (p1[0] - p0[0]) / length, (p1[1] - p0[1]) / length
+    p0 = (p0[0] + ux * r, p0[1] + uy * r)
+    p1 = (p1[0] - ux * r, p1[1] - uy * r)
+    d.line([p0, p1], fill=fill, width=max(1, round(width)))
+    for x, y in (p0, p1):
+        d.ellipse([x - r, y - r, x + r, y + r], fill=fill)
+
+
+def draw_ring(path: str, box: int,
+              minor_span: tuple[float, float], major_span: tuple[float, float],
               minor_width: float, major_width: float,
-              minor_color: tuple, major_color: tuple) -> None:
-    """Render the 60 ticks of one ring into a square PNG centred on the canvas centre."""
+              minor_color: tuple, major_color: tuple,
+              track: tuple[float, float, tuple] | None = None) -> None:
+    """Render the 60 ticks of one ring into a square PNG centred on the canvas centre.
+
+    Spans are (inner, outer) radii of the ink. `track` = (radius, width, color) also
+    draws a thin full circle whose OUTER edge sits on `radius`, flush with any tick
+    tips that end there.
+    """
     img = Image.new("RGBA", (box * SS, box * SS), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     off = (SIZE - box) / 2          # canvas coords -> image coords
 
+    if track:
+        radius, width, color = track
+        c, r, w = (CX - off) * SS, radius * SS, width * SS
+        # ImageDraw strokes inward from the bbox, so the outer edge lands on `radius`.
+        d.ellipse([c - r, c - r, c + r, c + r], outline=color, width=max(1, round(w)))
+
     for i in range(60):
         major = i % 5 == 0
+        inner, outer = major_span if major else minor_span
         x0, y0 = polar(inner, 6 * i)
-        x1, y1 = polar(major_outer if major else minor_outer, 6 * i)
-        d.line(
-            [((x0 - off) * SS, (y0 - off) * SS), ((x1 - off) * SS, (y1 - off) * SS)],
-            fill=major_color if major else minor_color,
-            width=max(1, round((major_width if major else minor_width) * SS)),
-        )
+        x1, y1 = polar(outer, 6 * i)
+        rounded_line(d, ((x0 - off) * SS, (y0 - off) * SS), ((x1 - off) * SS, (y1 - off) * SS),
+                     (major_width if major else minor_width) * SS,
+                     major_color if major else minor_color)
 
     img.resize((box, box), Image.LANCZOS).save(path)
     print(f"  {os.path.basename(path)}  {box}x{box}")
@@ -289,13 +347,13 @@ def draw_comet(path: str) -> tuple[int, int, int, int]:
     return save_cropped(img, path)
 
 
-def draw_lit_tick(path: str, outer: float, width: float) -> tuple[int, int, int, int]:
+def draw_lit_tick(path: str, inner: float, width: float) -> tuple[int, int, int, int]:
     """A cyan copy of one outer tick at 12 o'clock, rotated to the current second at runtime."""
     img = Image.new("RGBA", (SIZE * SS, SIZE * SS), (0, 0, 0, 0))
-    x0, y0 = polar(SEC_TICK_INNER, 0)
-    x1, y1 = polar(outer, 0)
-    ImageDraw.Draw(img).line([x0 * SS, y0 * SS, x1 * SS, y1 * SS], fill=COMET_COLOR + (255,),
-                             width=round((width + LIT_TICK_EXTRA_WIDTH) * SS))
+    x0, y0 = polar(inner, 0)
+    x1, y1 = polar(SEC_TICK_OUTER, 0)
+    rounded_line(ImageDraw.Draw(img), (x0 * SS, y0 * SS), (x1 * SS, y1 * SS),
+                 (width + LIT_TICK_EXTRA_WIDTH) * SS, COMET_COLOR + (255,))
     return save_cropped(img, path)
 
 
@@ -408,18 +466,16 @@ def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, in
   <Metadata key="PREVIEW_TIME" value="{PREVIEW_TIME[0]:02d}:{PREVIEW_TIME[1]:02d}:{PREVIEW_TIME[2]:02d}" />
 
   <Scene backgroundColor="#000000">
-{drift_open()}
+
+    <!-- Outer ring, lit tick and comet sit OUTSIDE the burn-in drift. They are all
+         hidden in ambient, so drift protects nothing there, and the outer ring hugs
+         the round screen edge: drifting it 2px makes the edge gap visibly uneven. -->
+
     <!-- Outer ring: static ticks and labels. Hidden in ambient along with the comet. -->
     <Group name="outer_ring" x="0" y="0" width="{SIZE}" height="{SIZE}">
       <Variant mode="AMBIENT" target="alpha" value="0" />
 {centred_image("seconds_ticks", "ticks_seconds", SEC_IMG, "      ")}
 {second_labels("      ")}
-    </Group>
-
-    <!-- Inner ring: static grey ticks, kept (dimmed) in ambient. -->
-    <Group name="inner_ring" x="0" y="0" width="{SIZE}" height="{SIZE}">
-      <Variant mode="AMBIENT" target="alpha" value="{AMBIENT_DIAL_ALPHA}" />
-{centred_image("minutes_ticks", "ticks_minutes", MIN_IMG, "      ")}
     </Group>
 
     <!-- Lit tick: the outer tick for the current second turns cyan, stepping once a
@@ -443,6 +499,12 @@ def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, in
                  width="{comet_box[2] - comet_box[0]}" height="{comet_box[3] - comet_box[1]}">
         <Image resource="comet" />
       </PartImage>
+    </Group>
+{drift_open()}
+    <!-- Inner ring: static grey ticks, kept (dimmed) in ambient. -->
+    <Group name="inner_ring" x="0" y="0" width="{SIZE}" height="{SIZE}">
+      <Variant mode="AMBIENT" target="alpha" value="{AMBIENT_DIAL_ALPHA}" />
+{centred_image("minutes_ticks", "ticks_minutes", MIN_IMG, "      ")}
     </Group>
 
     <!-- Hour, right-aligned against the minute pill. Follows the wearer's
@@ -519,21 +581,23 @@ def main() -> None:
     os.makedirs(RAW, exist_ok=True)
 
     print(f"font sizes: labels {SEC_NUM_SIZE}, hour {HOUR_SIZE}, minute {MINUTE_SIZE}")
+    print(f"comet track radius: {COMET_TRACK_RADIUS:.1f}")
     print("assets:")
     draw_ring(os.path.join(DRAWABLE, "ticks_seconds.png"), SEC_IMG,
-              SEC_TICK_INNER, SEC_TICK_MINOR_OUTER, SEC_TICK_MAJOR_OUTER,
-              SEC_TICK_MINOR_WIDTH, SEC_TICK_MAJOR_WIDTH, SEC_TICK_COLOR, SEC_TICK_COLOR)
+              (SEC_TICK_MINOR_INNER, SEC_TICK_OUTER), (SEC_TICK_MAJOR_INNER, SEC_TICK_OUTER),
+              SEC_TICK_MINOR_WIDTH, SEC_TICK_MAJOR_WIDTH, SEC_TICK_COLOR, SEC_TICK_COLOR,
+              track=(SEC_TICK_OUTER, SEC_TRACK_WIDTH, SEC_TRACK_COLOR))
     draw_ring(os.path.join(DRAWABLE, "ticks_minutes.png"), MIN_IMG,
-              MIN_TICK_INNER, MIN_TICK_MINOR_OUTER, MIN_TICK_MAJOR_OUTER,
+              (MIN_TICK_INNER, MIN_TICK_MINOR_OUTER), (MIN_TICK_INNER, MIN_TICK_MAJOR_OUTER),
               MIN_TICK_MINOR_WIDTH, MIN_TICK_MAJOR_WIDTH,
               MIN_TICK_MINOR_COLOR, MIN_TICK_MAJOR_COLOR)
     pill_box = draw_pill(os.path.join(DRAWABLE, "pill.png"))
     comet_box = draw_comet(os.path.join(DRAWABLE, "comet.png"))
     lit_boxes = {
         "tick_lit_major": draw_lit_tick(os.path.join(DRAWABLE, "tick_lit_major.png"),
-                                        SEC_TICK_MAJOR_OUTER, SEC_TICK_MAJOR_WIDTH),
+                                        SEC_TICK_MAJOR_INNER, SEC_TICK_MAJOR_WIDTH),
         "tick_lit_minor": draw_lit_tick(os.path.join(DRAWABLE, "tick_lit_minor.png"),
-                                        SEC_TICK_MINOR_OUTER, SEC_TICK_MINOR_WIDTH),
+                                        SEC_TICK_MINOR_INNER, SEC_TICK_MINOR_WIDTH),
     }
     draw_blank(os.path.join(DRAWABLE, "blank.png"))
     draw_preview(os.path.join(DRAWABLE, "preview.png"), *PREVIEW_TIME, pill_box, comet_box, lit_boxes)

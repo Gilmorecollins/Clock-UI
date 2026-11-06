@@ -10,110 +10,100 @@
 
   <Scene backgroundColor="#000000">
 
-    <!-- Burn-in protection: nudges the whole face around a 5x5 one-pixel lattice,
-         one step per minute. Nothing on this watch shifts the face otherwise. -->
-    <Group name="burn_in_drift" x="0" y="0" width="450" height="450">
-      <Transform target="x" value="[MINUTE] % 5 - 2" />
-      <Transform target="y" value="floor([MINUTE] / 5) % 5 - 2" />
+    <!-- Outer ring, lit tick and comet sit OUTSIDE the burn-in drift. They are all
+         hidden in ambient, so drift protects nothing there, and the outer ring hugs
+         the round screen edge: drifting it 2px makes the edge gap visibly uneven. -->
 
     <!-- Outer ring: static ticks and labels. Hidden in ambient along with the comet. -->
     <Group name="outer_ring" x="0" y="0" width="450" height="450">
       <Variant mode="AMBIENT" target="alpha" value="0" />
-      <PartImage name="seconds_ticks" x="29" y="29" width="392" height="392">
+      <PartImage name="seconds_ticks" x="0" y="0" width="450" height="450">
         <Image resource="ticks_seconds" />
       </PartImage>
       <PartText name="second_label_0"
-                x="207" y="4"
+                x="207" y="28"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">0</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">0</Font>
         </Text>
       </PartText>
       <PartText name="second_label_5"
-                x="310" y="32"
+                x="298" y="52"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">5</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">5</Font>
         </Text>
       </PartText>
       <PartText name="second_label_10"
-                x="385" y="107"
+                x="365" y="119"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">10</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">10</Font>
         </Text>
       </PartText>
       <PartText name="second_label_15"
-                x="413" y="210"
+                x="389" y="210"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">15</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">15</Font>
         </Text>
       </PartText>
       <PartText name="second_label_20"
-                x="385" y="313"
+                x="365" y="301"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">20</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">20</Font>
         </Text>
       </PartText>
       <PartText name="second_label_25"
-                x="310" y="388"
+                x="298" y="368"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">25</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">25</Font>
         </Text>
       </PartText>
       <PartText name="second_label_30"
-                x="207" y="416"
+                x="207" y="392"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">30</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">30</Font>
         </Text>
       </PartText>
       <PartText name="second_label_35"
-                x="104" y="388"
+                x="116" y="368"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">35</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">35</Font>
         </Text>
       </PartText>
       <PartText name="second_label_40"
-                x="29" y="313"
+                x="49" y="301"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">40</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">40</Font>
         </Text>
       </PartText>
       <PartText name="second_label_45"
-                x="1" y="210"
+                x="25" y="210"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">45</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">45</Font>
         </Text>
       </PartText>
       <PartText name="second_label_50"
-                x="29" y="107"
+                x="49" y="119"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">50</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">50</Font>
         </Text>
       </PartText>
       <PartText name="second_label_55"
-                x="104" y="32"
+                x="116" y="52"
                 width="36" height="30">
         <Text align="CENTER">
-          <Font family="google_sans_flex" size="20" weight="BOLD" color="#ffffff">55</Font>
+          <Font family="google_sans_flex" size="24" weight="BOLD" color="#ffffff">55</Font>
         </Text>
       </PartText>
-    </Group>
-
-    <!-- Inner ring: static grey ticks, kept (dimmed) in ambient. -->
-    <Group name="inner_ring" x="0" y="0" width="450" height="450">
-      <Variant mode="AMBIENT" target="alpha" value="160" />
-      <PartImage name="minutes_ticks" x="75" y="75" width="300" height="300">
-        <Image resource="ticks_minutes" />
-      </PartImage>
     </Group>
 
     <!-- Lit tick: the outer tick for the current second turns cyan, stepping once a
@@ -122,13 +112,13 @@
            pivotX="0.5" pivotY="0.5">
       <Variant mode="AMBIENT" target="alpha" value="0" />
       <Transform target="angle" value="6 * [SECOND]" />
-      <PartImage name="tick_lit_major" x="220" y="29"
-                 width="10" height="23">
+      <PartImage name="tick_lit_major" x="220" y="2"
+                 width="10" height="26">
         <Transform target="alpha" value="255 - 255 * floor(([SECOND] % 5 + 4) / 5)" />
         <Image resource="tick_lit_major" />
       </PartImage>
-      <PartImage name="tick_lit_minor" x="221" y="36"
-                 width="8" height="16">
+      <PartImage name="tick_lit_minor" x="221" y="2"
+                 width="8" height="17">
         <Transform target="alpha" value="255 * floor(([SECOND] % 5 + 4) / 5)" />
         <Image resource="tick_lit_minor" />
       </PartImage>
@@ -141,9 +131,23 @@
            pivotX="0.5" pivotY="0.5">
       <Variant mode="AMBIENT" target="alpha" value="0" />
       <Transform target="angle" value="6 * [SECOND_MILLISECOND]" />
-      <PartImage name="comet" x="155" y="53"
-                 width="80" height="28">
+      <PartImage name="comet" x="158" y="60"
+                 width="77" height="27">
         <Image resource="comet" />
+      </PartImage>
+    </Group>
+
+    <!-- Burn-in protection: nudges the whole face around a 5x5 one-pixel lattice,
+         one step per minute. Nothing on this watch shifts the face otherwise. -->
+    <Group name="burn_in_drift" x="0" y="0" width="450" height="450">
+      <Transform target="x" value="[MINUTE] % 5 - 2" />
+      <Transform target="y" value="floor([MINUTE] / 5) % 5 - 2" />
+
+    <!-- Inner ring: static grey ticks, kept (dimmed) in ambient. -->
+    <Group name="inner_ring" x="0" y="0" width="450" height="450">
+      <Variant mode="AMBIENT" target="alpha" value="160" />
+      <PartImage name="minutes_ticks" x="78" y="78" width="294" height="294">
+        <Image resource="ticks_minutes" />
       </PartImage>
     </Group>
 
@@ -153,7 +157,7 @@
               width="220" height="140">
       <Variant mode="AMBIENT" target="alpha" value="230" />
       <Text align="END">
-        <Font family="google_sans_flex" size="107" weight="BOLD" color="#ffffff">
+        <Font family="google_sans_flex" size="106" weight="BOLD" color="#ffffff">
           <Template>%02d<Parameter expression="[IS_24_HOUR_MODE] ? [HOUR_0_23] : [HOUR_1_12]" /></Template>
         </Font>
       </Text>
