@@ -47,18 +47,16 @@ SEC_TICK_MAJOR_INNER = 200
 SEC_TICK_MINOR_WIDTH = 2.4
 SEC_TICK_MAJOR_WIDTH = 4.5
 SEC_TICK_COLOR = (255, 255, 255, 240)
-# A thin continuous circle through the ticks' outer ends. Separate dashes alone
-# read as a 60-sided polygon round the edge; the line makes the bezel feel round.
-SEC_TRACK_WIDTH = 1.5
-SEC_TRACK_COLOR = (255, 255, 255, 90)
 SEC_NUM_RADIUS = 182
 SEC_NUM_HEIGHT = 17                 # rendered digit height, px
 SEC_IMG = 450                       # ticks reach the edge, so the full canvas
 
-# Inner ring: plain grey ticks, no labels.
-MIN_TICK_INNER = 132
-MIN_TICK_MINOR_OUTER = 141
-MIN_TICK_MAJOR_OUTER = 146
+# Inner ring: plain grey ticks, no labels. Built like the outer ring: every tick
+# hangs inward from one outer circle, so the tips facing the comet form a clean
+# circle; the five-minute ticks reach further in.
+MIN_TICK_OUTER = 146
+MIN_TICK_MINOR_INNER = 137
+MIN_TICK_MAJOR_INNER = 132
 MIN_TICK_MINOR_WIDTH = 2.0
 MIN_TICK_MAJOR_WIDTH = 2.4
 MIN_TICK_MINOR_COLOR = (255, 255, 255, 80)
@@ -220,7 +218,7 @@ def hour_ink_radius(size: int) -> float:
 
 def fit_hour_size() -> int:
     size = fit_font_size("16", HOUR_MAX_HEIGHT)
-    while hour_ink_radius(size) > MIN_TICK_INNER - HOUR_RING_MARGIN:
+    while hour_ink_radius(size) > MIN_TICK_MAJOR_INNER - HOUR_RING_MARGIN:
         size -= 1
     return size
 
@@ -243,7 +241,7 @@ def label_inner_radius() -> float:
     return nearest
 
 
-COMET_TRACK_RADIUS = (MIN_TICK_MAJOR_OUTER + label_inner_radius()) / 2
+COMET_TRACK_RADIUS = (MIN_TICK_OUTER + label_inner_radius()) / 2
 COMET_DOT_RADIUS = COMET_TRACK_RADIUS
 COMET_TAIL_RADIUS = COMET_TRACK_RADIUS
 
@@ -283,23 +281,14 @@ def rounded_line(d: ImageDraw.ImageDraw, p0: tuple[float, float], p1: tuple[floa
 def draw_ring(path: str, box: int,
               minor_span: tuple[float, float], major_span: tuple[float, float],
               minor_width: float, major_width: float,
-              minor_color: tuple, major_color: tuple,
-              track: tuple[float, float, tuple] | None = None) -> None:
+              minor_color: tuple, major_color: tuple) -> None:
     """Render the 60 ticks of one ring into a square PNG centred on the canvas centre.
 
-    Spans are (inner, outer) radii of the ink. `track` = (radius, width, color) also
-    draws a thin full circle whose OUTER edge sits on `radius`, flush with any tick
-    tips that end there.
+    Spans are (inner, outer) radii of the ink, round caps included.
     """
     img = Image.new("RGBA", (box * SS, box * SS), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     off = (SIZE - box) / 2          # canvas coords -> image coords
-
-    if track:
-        radius, width, color = track
-        c, r, w = (CX - off) * SS, radius * SS, width * SS
-        # ImageDraw strokes inward from the bbox, so the outer edge lands on `radius`.
-        d.ellipse([c - r, c - r, c + r, c + r], outline=color, width=max(1, round(w)))
 
     for i in range(60):
         major = i % 5 == 0
@@ -585,10 +574,9 @@ def main() -> None:
     print("assets:")
     draw_ring(os.path.join(DRAWABLE, "ticks_seconds.png"), SEC_IMG,
               (SEC_TICK_MINOR_INNER, SEC_TICK_OUTER), (SEC_TICK_MAJOR_INNER, SEC_TICK_OUTER),
-              SEC_TICK_MINOR_WIDTH, SEC_TICK_MAJOR_WIDTH, SEC_TICK_COLOR, SEC_TICK_COLOR,
-              track=(SEC_TICK_OUTER, SEC_TRACK_WIDTH, SEC_TRACK_COLOR))
+              SEC_TICK_MINOR_WIDTH, SEC_TICK_MAJOR_WIDTH, SEC_TICK_COLOR, SEC_TICK_COLOR)
     draw_ring(os.path.join(DRAWABLE, "ticks_minutes.png"), MIN_IMG,
-              (MIN_TICK_INNER, MIN_TICK_MINOR_OUTER), (MIN_TICK_INNER, MIN_TICK_MAJOR_OUTER),
+              (MIN_TICK_MINOR_INNER, MIN_TICK_OUTER), (MIN_TICK_MAJOR_INNER, MIN_TICK_OUTER),
               MIN_TICK_MINOR_WIDTH, MIN_TICK_MAJOR_WIDTH,
               MIN_TICK_MINOR_COLOR, MIN_TICK_MAJOR_COLOR)
     pill_box = draw_pill(os.path.join(DRAWABLE, "pill.png"))
