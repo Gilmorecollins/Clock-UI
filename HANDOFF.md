@@ -26,12 +26,21 @@ the 450px canvas; the constants at the top of `tools/generate.py` record it.
   PNG in a rotating Group. It is the only moving element.
 - Battery: five segments plus the percentage under the time, read from the
   built-in `[BATTERY_PERCENT]` (no complication slot). Red at 15% and below.
-  Verified on the emulator on 2026-11-08 at 12%, 78%, 100% and in ambient.
+  Verified on the emulator on 2026-11-08 at 12%, 78%, 100% and in ambient, and
+  on the Galaxy Watch 4 (SM-R860) at 2%, 12% and 50%.
+- Steps: count above the time, footprints icon + "STEPS" under it. Icon colour
+  follows `[STEP_PERCENT]`: grey <25%, orange, yellow, cyan, green at 100%+.
+  Real counts verified on the Galaxy Watch 4 on 2026-11-08. The emulator always
+  reads 0 steps (synthetic Health Services data does not reach the WFF
+  runtime); the colour bands were checked there by temporarily driving them
+  from `[SECOND]`.
+- Battery and steps text were enlarged after on-wrist testing: at the 40mm
+  watch's 0.88 scale, 12px text was too small to read.
 - Font: Google Sans Flex Bold (SIL OFL 1.1). Comfortaa was removed.
 - An invisible WFF `SecondHand` uses `Sweep frequency="SYNC_TO_DEVICE"` to
   request the smoothest cadence the current device can sustain.
-- Ambient keeps the inner ring, hour, minute pill and battery; the comet and
-  outer ring hide.
+- Ambient keeps the inner ring, hour, minute pill, steps and battery; the
+  comet and outer ring hide.
 
 This avoids the prior approach of rotating an entire outer dial and
 counter-rotating 12 live text labels every frame, which looked laggy.

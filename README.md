@@ -3,7 +3,44 @@
 A native Wear OS watch face built with
 [Watch Face Format](https://developer.android.com/training/wearables/wff) (WFF).
 
-![preview](watchface/src/main/res/drawable/preview.png)
+![Radial Clock with every element labelled](docs/images/features.png)
+
+## What's new
+
+### Step counter
+
+Today's step count sits above the time, read from Samsung Health. The small footprints
+icon beside **STEPS** changes colour as you get closer to your daily goal. The stages are
+shares of whatever goal you set in Samsung Health, so if you change your goal, the stages
+change with it:
+
+![Step icon colour at each stage of the daily goal](docs/images/steps-stages.png)
+
+### Battery
+
+Five segments under the time, filled to the nearest fifth, with the exact percentage
+underneath. It turns red at 15% and below, and one segment stays lit down to 1% so a nearly
+flat battery never looks empty:
+
+![Battery indicator at 100, 78, 50, 12 and 3 percent](docs/images/battery-states.png)
+
+Both read the watch's own data (`[STEP_COUNT]`, `[STEP_PERCENT]`, `[BATTERY_PERCENT]`) rather
+than complication slots, so there is nothing for Samsung's runtime to reject. Both were
+enlarged after testing on the wrist: at the 40mm watch's scale, small text was hard to read.
+
+### Always-on
+
+The comet and outer ring switch off. The inner ring, time, steps and battery stay, dimmed:
+
+![Interactive and always-on modes side by side](docs/images/modes.png)
+
+### On the watch
+
+A real screenshot from a Galaxy Watch 4 (40mm), at 3% battery while charging. The bolt at
+the top and the orange dot at 9 o'clock are the system's own charging and notification
+indicators, not part of the face.
+
+![Screenshot from a Galaxy Watch 4](docs/images/on-watch.png)
 
 ## Why it isn't just the HTML
 
@@ -19,6 +56,7 @@ The current design follows
 | Outer ring: 60 white ticks, labels 0–55 | one static PNG for the ticks, 12 static `PartText` labels |
 | Inner ring: 60 grey ticks | one static PNG |
 | Hour + minute pill | two `PartText`s and a small filled pill PNG; the hour is right-aligned against the pill |
+| Steps above the time: count, then a footprints icon beside "STEPS" | a `PartText` on `[STEP_COUNT]`, a static label PNG, and five icon PNGs stacked in one spot, one visible at a time: grey, orange, yellow, cyan, green at 0/25/50/75/100% of `[STEP_PERCENT]` (the wearer's Samsung Health goal) |
 | Battery: five segments + percentage under the time | three tiny segment PNGs (track, cyan, red) placed five times, lit by arithmetic alpha on the built-in `[BATTERY_PERCENT]`; red at 15% and below. No `ComplicationSlot`. Dimmed, not hidden, in ambient |
 | Seconds comet (dot, stem, fading tail) | the only moving part: one small cropped PNG inside a full-canvas `Group` rotated by `6 * [SECOND_MILLISECOND]` |
 
@@ -28,15 +66,18 @@ frame, which looked laggy. Now nothing but the comet moves.
 ## Layout
 
 ```text
-settings.gradle.kts, build.gradle.kts, gradle.properties
+settings.gradle.kts, build.gradle.kts, gradle.properties, gradlew(.bat)
 tools/generate.py                <- source of truth for geometry; regenerates assets + XML
+tools/readme_images.py           <- renders the README graphics into docs/images/
+docs/images/                     <- GENERATED — README graphics
 watchface/
   build.gradle.kts
   GOOGLE-SANS-FLEX-OFL.txt       <- font license (SIL OFL 1.1)
   src/main/
-    AndroidManifest.xml          <- hasCode=false, WFF format version 5
+    AndroidManifest.xml          <- hasCode=false, WFF format version 1 (see Notes)
     res/raw/watchface.xml        <- GENERATED — edit generate.py, not this
-    res/drawable/                <- GENERATED — ticks_seconds, ticks_minutes, pill, comet, preview
+    res/drawable/                <- GENERATED — ticks, pill, comet, lit ticks, battery
+                                    segments, step icons + label, preview
     res/font/                    <- Google Sans Flex, static Bold instance
     res/xml/watch_face_info.xml
     res/values/strings.xml
@@ -51,6 +92,13 @@ python tools/generate.py
 
 It needs Python 3 with `pillow` (`python -m pip install pillow`).
 
+After a design change, refresh the README graphics too. Pass a screenshot from the watch to
+also update `on-watch.png`; without one, that image is left as it is:
+
+```powershell
+python tools/readme_images.py [watch-screenshot.png]
+```
+
 ## Build
 
 Nothing extra needs installing — this machine already has Android Studio (with its bundled
@@ -61,17 +109,14 @@ below.
 Easiest route is **Android Studio**: `File > Open` → this project folder → let it sync →
 `Build > Build Bundle(s)/APK(s) > Build APK(s)`.
 
-From the command line, this is the exact invocation that was used to build it:
+From the command line, use the checked-in Gradle wrapper:
 
 ```powershell
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
-$gradle = "$env:USERPROFILE\.gradle\wrapper\dists\gradle-9.0.0-bin\d6wjpkvcgsg3oed0qlfss3wgl\gradle-9.0.0\bin\gradle.bat"
-cd "path\to\Clock-UI"
-& $gradle :watchface:assembleDebug
+.\gradlew.bat --no-daemon :watchface:assembleDebug
 ```
 
-There is no Gradle wrapper checked in (the `gradle-wrapper.jar` is a binary). Android Studio
-will offer to generate one; accept it and `.\gradlew` works thereafter.
+If Gradle can't find a JDK, point it at Android Studio's bundled one first:
+`$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"`.
 
 Two things worth knowing if you touch the build config:
 
@@ -81,7 +126,7 @@ Two things worth knowing if you touch the build config:
   writes one, and Java's properties parser then can't read `sdk.dir`, producing a misleading
   "SDK location not found". Write it with `-Encoding ascii`, or let Android Studio create it.
 
-The debug APK lands in `watchface/build/outputs/apk/debug/watchface-debug.apk` (~181 KB).
+The debug APK lands in `watchface/build/outputs/apk/debug/watchface-debug.apk` (~115 KB).
 It's debug-signed, which is all a sideload needs.
 
 ### Release builds
@@ -226,8 +271,8 @@ be a placeholder".
   Read it again with: `adb shell dumpsys batterystats`, then find the UID of
   `com.samsung.wear.watchface.runtime` via `adb shell pm list packages -U` (it renders the
   face; the `radialclock` package itself is inert and will look idle).
-- **Always-on display.** Ambient keeps the grey inner ring at alpha 160 and the hour and
-  minute pill at 230. The comet goes dark because ambient refreshes once a minute, so it
+- **Always-on display.** Ambient keeps the grey inner ring at alpha 160, the hour and
+  minute pill at 230, and the steps and battery at 200. The comet goes dark because ambient refreshes once a minute, so it
   would sit frozen on a stale second; the outer ring goes with it, since without the comet
   it carries no information.
 

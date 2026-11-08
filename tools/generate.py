@@ -11,6 +11,7 @@ The face is almost entirely static:
   * outer ring  -- 60 white ticks (one PNG) plus 12 static second labels
   * inner ring  -- 60 dim grey ticks (one PNG), no labels
   * centre      -- the hour, and the minute inside a filled rounded pill
+  * steps       -- the day's count above the time, icon colour by goal progress
   * battery     -- five segments and the percentage under the time
   * comet       -- the only moving part: a cyan dot with a fading tail, one small
                    cropped PNG inside a Group that rotates with the seconds
@@ -117,18 +118,42 @@ LABEL_GLOW_SECONDS = 5
 # and number turn red at BATTERY_LOW_PERCENT and below.
 BATTERY = True
 BATTERY_SEGMENTS = 5
-BATTERY_SEG_WIDTH = 9
-BATTERY_SEG_HEIGHT = 6
-BATTERY_SEG_GAP = 3
-BATTERY_SEG_CY = 304
-BATTERY_TEXT_CY = 319
-BATTERY_TEXT_SIZE = 12              # font size (em), as WFF takes it
+# Sized for the 40mm Watch 4, which draws this 450 canvas at 396px (x0.88).
+BATTERY_SEG_WIDTH = 14
+BATTERY_SEG_HEIGHT = 9
+BATTERY_SEG_GAP = 5
+BATTERY_SEG_CY = 300
+BATTERY_TEXT_CY = 322
+BATTERY_TEXT_SIZE = 19              # font size (em), as WFF takes it
 BATTERY_TRACK_COLOR = (60, 64, 66)
 BATTERY_TEXT_COLOR = (150, 155, 158)
 BATTERY_LOW_COLOR = (255, 92, 77)
 BATTERY_LOW_PERCENT = 15
 BATTERY_AMBIENT_ALPHA = 200
 PREVIEW_BATTERY = 78
+
+# Steps: the day's count above the time, and under it a footprints icon beside a
+# grey "STEPS" label. The icon's colour shows progress towards the wearer's daily
+# goal ([STEP_PERCENT], so it follows whatever goal they set in Samsung Health):
+STEPS = True
+STEPS_COUNT_CY = 132
+STEPS_COUNT_SIZE = 27               # font size (em)
+STEPS_LABEL = "STEPS"
+STEPS_LABEL_CY = 160
+STEPS_LABEL_SIZE = 14
+STEPS_LABEL_COLOR = BATTERY_TEXT_COLOR
+STEPS_ICON_WIDTH = 14               # layout width of the icon, px
+STEPS_ICON_HEIGHT = 15
+STEPS_ICON_GAP = 6                  # icon to label
+STEPS_TIERS = [                     # (from % of goal, icon colour)
+    (0, (150, 155, 158)),           # grey    just started
+    (25, (255, 140, 66)),           # orange  warming up
+    (50, (255, 214, 64)),           # yellow  halfway
+    (75, (11, 225, 253)),           # cyan    nearly there (the face's accent)
+    (100, (120, 230, 140)),         # green   goal reached
+]
+STEPS_AMBIENT_ALPHA = 200
+PREVIEW_STEPS = (6482, 10000)       # count, goal
 
 SS = 4                              # supersampling factor for antialiasing
 
@@ -402,7 +427,7 @@ def draw_battery_segment(path: str, color: tuple) -> tuple[int, int]:
 def battery_threshold(k: int) -> int:
     """Percent at which segment k (0-based) lights: the level rounded to fifths,
     but never fewer than one segment while there is any charge."""
-    return max(1, 20 * (k + 1) - 10)
+    return 1 if k == 0 else 20 * (k + 1) - 10
 
 
 def battery_lit(k: int, pct: int) -> bool:
@@ -421,6 +446,62 @@ def battery_on_expr(k: int) -> str:
 BATTERY_LOW_EXPR = f"(1 - floor(([BATTERY_PERCENT] + {99 - BATTERY_LOW_PERCENT}) / 100))"
 
 
+def steps_label_layout() -> tuple[float, float]:
+    """(icon centre x, label left x): icon + gap + label centred as one line."""
+    f = ImageFont.truetype(FONT_PATH, STEPS_LABEL_SIZE)
+    lw = f.getlength(STEPS_LABEL)
+    x0 = CX - (STEPS_ICON_WIDTH + STEPS_ICON_GAP + lw) / 2
+    return x0 + STEPS_ICON_WIDTH / 2, x0 + STEPS_ICON_WIDTH + STEPS_ICON_GAP
+
+
+def draw_steps_icon(path: str, color: tuple) -> tuple[int, int, int, int]:
+    """Two small staggered shoe prints, in one tier's colour."""
+    img = Image.new("RGBA", (SIZE * SS, SIZE * SS), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    cx, cy = steps_label_layout()[0] * SS, STEPS_LABEL_CY * SS
+    s = STEPS_ICON_HEIGHT * SS / 12
+    for dx, dy in ((-2.6, 1.5), (2.6, -1.5)):
+        x, y = cx + dx * s, cy + dy * s
+        d.ellipse([x - 2 * s, y - 4.5 * s, x + 2 * s, y + 2.2 * s], fill=color + (255,))   # sole
+        d.ellipse([x - 1.6 * s, y + 3 * s, x + 1.6 * s, y + 5.8 * s], fill=color + (255,))  # heel
+    return save_cropped(img, path)
+
+
+def draw_steps_label(path: str) -> tuple[int, int, int, int]:
+    """The static grey "STEPS" label, as an image so its ink lands exactly where the
+    icon layout expects (a PartText would place it by font metrics instead)."""
+    img = Image.new("RGBA", (SIZE * SS, SIZE * SS), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    f = ImageFont.truetype(FONT_PATH, STEPS_LABEL_SIZE * SS)
+    b = d.textbbox((0, 0), STEPS_LABEL, font=f)
+    d.text((steps_label_layout()[1] * SS - b[0], STEPS_LABEL_CY * SS - (b[1] + b[3]) / 2),
+           STEPS_LABEL, font=f, fill=STEPS_LABEL_COLOR + (255,))
+    return save_cropped(img, path)
+
+
+def steps_tier(k: int, pct: float) -> bool:
+    """Python twin of steps_tier_expr(), for the preview."""
+    lo = STEPS_TIERS[k][0]
+    hi = STEPS_TIERS[k + 1][0] if k + 1 < len(STEPS_TIERS) else math.inf
+    return lo <= pct < hi
+
+
+def steps_tier_expr(k: int) -> str:
+    """1 while [STEP_PERCENT] is in tier k's band, else 0.
+
+    at_least(t) = floor((p + 10000 - t) / 10000) is 0 below t and 1 from t up to
+    10000% of goal; a band is at_least(lo) - at_least(hi). Pure arithmetic, no
+    comparison operator (see OFF_FIVE).
+    """
+    def at_least(t: int) -> str:
+        return f"floor(([STEP_PERCENT] + {10000 - t}) / 10000)"
+    lo = STEPS_TIERS[k][0]
+    if k + 1 == len(STEPS_TIERS):
+        return at_least(lo)
+    hi = STEPS_TIERS[k + 1][0]
+    return f"({at_least(lo)} - {at_least(hi)})"
+
+
 def draw_blank(path: str) -> None:
     """A 2x2 transparent pixel for the invisible frame-rate hint hand to point at."""
     Image.new("RGBA", (2, 2), (0, 0, 0, 0)).save(path)
@@ -431,7 +512,8 @@ def draw_preview(path: str, hour: int, minute: int, second: int,
                  pill_box: tuple[int, int, int, int],
                  comet_box: tuple[int, int, int, int],
                  lit_boxes: dict[str, tuple[int, int, int, int]],
-                 battery_origin: tuple[int, int]) -> None:
+                 battery_origin: tuple[int, int],
+                 steps_boxes: tuple[list, tuple] | None = None) -> None:
     """A static render of the face for the watch face picker."""
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 255))
 
@@ -492,6 +574,16 @@ def draw_preview(path: str, hour: int, minute: int, second: int,
             img.alpha_composite(seg, (ox + k * (BATTERY_SEG_WIDTH + BATTERY_SEG_GAP), oy))
         centred(f"{pct}%", CX, BATTERY_TEXT_CY, BATTERY_TEXT_SIZE,
                 (BATTERY_LOW_COLOR if low else BATTERY_TEXT_COLOR) + (255,))
+
+    if steps_boxes:
+        count, goal = PREVIEW_STEPS
+        icon_boxes, label_box = steps_boxes
+        centred(str(count), CX, STEPS_COUNT_CY, STEPS_COUNT_SIZE)
+        img.alpha_composite(Image.open(os.path.join(DRAWABLE, "steps_label.png")).convert("RGBA"),
+                            label_box[:2])
+        k = next(k for k in range(len(STEPS_TIERS)) if steps_tier(k, 100 * count / goal))
+        img.alpha_composite(Image.open(os.path.join(DRAWABLE, f"steps_icon_{k}.png")).convert("RGBA"),
+                            icon_boxes[k][:2])
 
     img.convert("RGB").save(path)
     print(f"  {os.path.basename(path)}  {SIZE}x{SIZE}")
@@ -612,9 +704,47 @@ def battery_xml(origin: tuple[int, int], indent: str = "    ") -> str:
 """
 
 
+def steps_xml(icon_boxes: list[tuple[int, int, int, int]], label_box: tuple[int, int, int, int],
+              indent: str = "    ") -> str:
+    """The step count, the static label, and one icon copy per tier, exactly one of
+    which is visible at a time."""
+    if not STEPS:
+        return ""
+    i2 = indent + "  "
+    parts = []
+    box_w, box_h = 90, 36
+    parts.append(f"""{i2}<PartText name="steps_count" x="{round(CX - box_w / 2)}" y="{round(STEPS_COUNT_CY - box_h / 2)}"
+{i2}          width="{box_w}" height="{box_h}">
+{i2}  <Text align="CENTER">
+{i2}    <Font family="{FONT_FAMILY}" size="{STEPS_COUNT_SIZE}" weight="BOLD" color="#ffffff">
+{i2}      <Template>%d<Parameter expression="[STEP_COUNT]" /></Template>
+{i2}    </Font>
+{i2}  </Text>
+{i2}</PartText>""")
+    x0, y0, x1, y1 = label_box
+    parts.append(f"""{i2}<PartImage name="steps_label" x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}">
+{i2}  <Image resource="steps_label" />
+{i2}</PartImage>""")
+    for k, (x0, y0, x1, y1) in enumerate(icon_boxes):
+        parts.append(f"""{i2}<PartImage name="steps_icon_{k}" x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}">
+{i2}  <Transform target="alpha" value="255 * {steps_tier_expr(k)}" />
+{i2}  <Image resource="steps_icon_{k}" />
+{i2}</PartImage>""")
+    body = "\n".join(parts)
+    return f"""
+{indent}<!-- Steps: the count, then a footprints icon beside "STEPS". The icon's colour
+{indent}     follows progress towards the daily goal: {", ".join(f"{t}%" for t, _ in STEPS_TIERS)}. -->
+{indent}<Group name="steps" x="0" y="0" width="{SIZE}" height="{SIZE}">
+{indent}  <Variant mode="AMBIENT" target="alpha" value="{STEPS_AMBIENT_ALPHA}" />
+{body}
+{indent}</Group>
+"""
+
+
 def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, int, int],
               lit_boxes: dict[str, tuple[int, int, int, int]],
-              battery_origin: tuple[int, int]) -> str:
+              battery_origin: tuple[int, int],
+              steps_boxes: tuple[list, tuple] | None = None) -> str:
     hour_box_w = 220
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <!--
@@ -695,7 +825,7 @@ def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, in
         </Font>
       </Text>
     </PartText>
-{battery_xml(battery_origin)}{frame_rate_probe()}
+{steps_xml(*steps_boxes) if steps_boxes else ""}{battery_xml(battery_origin)}{frame_rate_probe()}
 {drift_close()}
   </Scene>
 </WatchFace>
@@ -765,13 +895,18 @@ def main() -> None:
                             ("battery_seg_on", COMET_COLOR),
                             ("battery_seg_low", BATTERY_LOW_COLOR)):
             battery_origin = draw_battery_segment(os.path.join(DRAWABLE, name + ".png"), color)
+    steps_boxes = None
+    if STEPS:
+        icon_boxes = [draw_steps_icon(os.path.join(DRAWABLE, f"steps_icon_{k}.png"), color)
+                      for k, (_, color) in enumerate(STEPS_TIERS)]
+        steps_boxes = (icon_boxes, draw_steps_label(os.path.join(DRAWABLE, "steps_label.png")))
     draw_blank(os.path.join(DRAWABLE, "blank.png"))
     draw_preview(os.path.join(DRAWABLE, "preview.png"), *PREVIEW_TIME, pill_box, comet_box,
-                 lit_boxes, battery_origin)
+                 lit_boxes, battery_origin, steps_boxes)
 
     xml_path = os.path.join(RAW, "watchface.xml")
     with open(xml_path, "w", encoding="utf-8") as f:
-        f.write(build_xml(pill_box, comet_box, lit_boxes, battery_origin))
+        f.write(build_xml(pill_box, comet_box, lit_boxes, battery_origin, steps_boxes))
     print(f"\nwatchface.xml written to {os.path.relpath(xml_path, HERE)}")
 
 
