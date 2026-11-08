@@ -24,11 +24,14 @@ the 450px canvas; the constants at the top of `tools/generate.py` record it.
 - Centre: hour right-aligned against a filled `#242728` minute pill.
 - Seconds comet: cyan `#0BE1FD` dot, stem and fading tail, one small cropped
   PNG in a rotating Group. It is the only moving element.
+- Battery: five segments plus the percentage under the time, read from the
+  built-in `[BATTERY_PERCENT]` (no complication slot). Red at 15% and below.
+  Verified on the emulator on 2026-11-08 at 12%, 78%, 100% and in ambient.
 - Font: Google Sans Flex Bold (SIL OFL 1.1). Comfortaa was removed.
 - An invisible WFF `SecondHand` uses `Sweep frequency="SYNC_TO_DEVICE"` to
   request the smoothest cadence the current device can sustain.
-- Ambient keeps the inner ring, hour and minute pill; the comet and outer ring
-  hide.
+- Ambient keeps the inner ring, hour, minute pill and battery; the comet and
+  outer ring hide.
 
 This avoids the prior approach of rotating an entire outer dial and
 counter-rotating 12 live text labels every frame, which looked laggy.

@@ -275,6 +275,85 @@
       </Text>
     </PartText>
 
+    <!-- Battery: five segments filled to the nearest fifth, the percentage under
+         them. Cyan normally, red at 15% and below. -->
+    <Group name="battery" x="0" y="0" width="450" height="450">
+      <Variant mode="AMBIENT" target="alpha" value="200" />
+      <PartImage name="battery_0_track" x="195" y="300" width="12" height="8">
+        <Image resource="battery_seg_track" />
+      </PartImage>
+      <PartImage name="battery_0_on" x="195" y="300" width="12" height="8">
+        <Transform target="alpha" value="255 * floor(([BATTERY_PERCENT] + 90) / 100) * (1 - (1 - floor(([BATTERY_PERCENT] + 84) / 100)))" />
+        <Image resource="battery_seg_on" />
+      </PartImage>
+      <PartImage name="battery_0_low" x="195" y="300" width="12" height="8">
+        <Transform target="alpha" value="255 * floor(([BATTERY_PERCENT] + 90) / 100) * (1 - floor(([BATTERY_PERCENT] + 84) / 100))" />
+        <Image resource="battery_seg_low" />
+      </PartImage>
+      <PartImage name="battery_1_track" x="207" y="300" width="12" height="8">
+        <Image resource="battery_seg_track" />
+      </PartImage>
+      <PartImage name="battery_1_on" x="207" y="300" width="12" height="8">
+        <Transform target="alpha" value="255 * floor(([BATTERY_PERCENT] + 70) / 100) * (1 - (1 - floor(([BATTERY_PERCENT] + 84) / 100)))" />
+        <Image resource="battery_seg_on" />
+      </PartImage>
+      <PartImage name="battery_1_low" x="207" y="300" width="12" height="8">
+        <Transform target="alpha" value="255 * floor(([BATTERY_PERCENT] + 70) / 100) * (1 - floor(([BATTERY_PERCENT] + 84) / 100))" />
+        <Image resource="battery_seg_low" />
+      </PartImage>
+      <PartImage name="battery_2_track" x="219" y="300" width="12" height="8">
+        <Image resource="battery_seg_track" />
+      </PartImage>
+      <PartImage name="battery_2_on" x="219" y="300" width="12" height="8">
+        <Transform target="alpha" value="255 * floor(([BATTERY_PERCENT] + 50) / 100) * (1 - (1 - floor(([BATTERY_PERCENT] + 84) / 100)))" />
+        <Image resource="battery_seg_on" />
+      </PartImage>
+      <PartImage name="battery_2_low" x="219" y="300" width="12" height="8">
+        <Transform target="alpha" value="255 * floor(([BATTERY_PERCENT] + 50) / 100) * (1 - floor(([BATTERY_PERCENT] + 84) / 100))" />
+        <Image resource="battery_seg_low" />
+      </PartImage>
+      <PartImage name="battery_3_track" x="231" y="300" width="12" height="8">
+        <Image resource="battery_seg_track" />
+      </PartImage>
+      <PartImage name="battery_3_on" x="231" y="300" width="12" height="8">
+        <Transform target="alpha" value="255 * floor(([BATTERY_PERCENT] + 30) / 100) * (1 - (1 - floor(([BATTERY_PERCENT] + 84) / 100)))" />
+        <Image resource="battery_seg_on" />
+      </PartImage>
+      <PartImage name="battery_3_low" x="231" y="300" width="12" height="8">
+        <Transform target="alpha" value="255 * floor(([BATTERY_PERCENT] + 30) / 100) * (1 - floor(([BATTERY_PERCENT] + 84) / 100))" />
+        <Image resource="battery_seg_low" />
+      </PartImage>
+      <PartImage name="battery_4_track" x="243" y="300" width="12" height="8">
+        <Image resource="battery_seg_track" />
+      </PartImage>
+      <PartImage name="battery_4_on" x="243" y="300" width="12" height="8">
+        <Transform target="alpha" value="255 * floor(([BATTERY_PERCENT] + 10) / 100) * (1 - (1 - floor(([BATTERY_PERCENT] + 84) / 100)))" />
+        <Image resource="battery_seg_on" />
+      </PartImage>
+      <PartImage name="battery_4_low" x="243" y="300" width="12" height="8">
+        <Transform target="alpha" value="255 * floor(([BATTERY_PERCENT] + 10) / 100) * (1 - floor(([BATTERY_PERCENT] + 84) / 100))" />
+        <Image resource="battery_seg_low" />
+      </PartImage>
+      <PartText name="battery_percent" x="190" y="304"
+                width="70" height="30">
+        <Transform target="alpha" value="255 * (1 - (1 - floor(([BATTERY_PERCENT] + 84) / 100)))" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="12" weight="BOLD" color="#969b9e">
+            <Template>%d%%<Parameter expression="[BATTERY_PERCENT]" /></Template>
+          </Font>
+        </Text>
+      </PartText>
+      <PartText name="battery_percent_low" x="190" y="304"
+                width="70" height="30">
+        <Transform target="alpha" value="255 * (1 - floor(([BATTERY_PERCENT] + 84) / 100))" />
+        <Text align="CENTER">
+          <Font family="google_sans_flex" size="12" weight="BOLD" color="#ff5c4d">
+            <Template>%d%%<Parameter expression="[BATTERY_PERCENT]" /></Template>
+          </Font>
+        </Text>
+      </PartText>
+    </Group>
+
     <AnalogClock x="0" y="0" width="450" height="450">
       <SecondHand resource="blank" x="224" y="120" width="2" height="105"
                   pivotX="0.5" pivotY="1.0" alpha="0">

@@ -11,6 +11,7 @@ The face is almost entirely static:
   * outer ring  -- 60 white ticks (one PNG) plus 12 static second labels
   * inner ring  -- 60 dim grey ticks (one PNG), no labels
   * centre      -- the hour, and the minute inside a filled rounded pill
+  * battery     -- five segments and the percentage under the time
   * comet       -- the only moving part: a cyan dot with a fading tail, one small
                    cropped PNG inside a Group that rotates with the seconds
 
@@ -109,6 +110,25 @@ LIT_TICK_EXTRA_WIDTH = 0.8
 # comet reaches it, then fades back to white over this many seconds. At 5 a label
 # has just faded out as the comet lights the next one.
 LABEL_GLOW_SECONDS = 5
+
+# Battery: five short segments under the time, filled to the nearest fifth, with
+# the exact percentage underneath. Reads the watch's own [BATTERY_PERCENT] rather
+# than a ComplicationSlot, so there is no slot for the runtime to reject. Segments
+# and number turn red at BATTERY_LOW_PERCENT and below.
+BATTERY = True
+BATTERY_SEGMENTS = 5
+BATTERY_SEG_WIDTH = 9
+BATTERY_SEG_HEIGHT = 6
+BATTERY_SEG_GAP = 3
+BATTERY_SEG_CY = 304
+BATTERY_TEXT_CY = 319
+BATTERY_TEXT_SIZE = 12              # font size (em), as WFF takes it
+BATTERY_TRACK_COLOR = (60, 64, 66)
+BATTERY_TEXT_COLOR = (150, 155, 158)
+BATTERY_LOW_COLOR = (255, 92, 77)
+BATTERY_LOW_PERCENT = 15
+BATTERY_AMBIENT_ALPHA = 200
+PREVIEW_BATTERY = 78
 
 SS = 4                              # supersampling factor for antialiasing
 
@@ -351,6 +371,56 @@ def draw_lit_tick(path: str, inner: float, width: float) -> tuple[int, int, int,
     return save_cropped(img, path)
 
 
+def battery_seg_left() -> float:
+    """Canvas x of the first segment's left edge, centring the row on the face."""
+    total = BATTERY_SEGMENTS * BATTERY_SEG_WIDTH + (BATTERY_SEGMENTS - 1) * BATTERY_SEG_GAP
+    return CX - total / 2
+
+
+def draw_battery_segment(path: str, color: tuple) -> tuple[int, int]:
+    """One rounded segment, padded by a pixel and offset so its subpixel position is
+    right. Every segment shares the same fractional x, so one image serves all five.
+
+    Returns the integer canvas offset of the image for the FIRST segment; segment k
+    sits BATTERY_SEG_WIDTH + BATTERY_SEG_GAP further right per step.
+    """
+    left = battery_seg_left()
+    top = BATTERY_SEG_CY - BATTERY_SEG_HEIGHT / 2
+    ox, oy = math.floor(left) - 1, math.floor(top) - 1
+    w = math.ceil(left - ox + BATTERY_SEG_WIDTH + 1)
+    h = math.ceil(top - oy + BATTERY_SEG_HEIGHT + 1)
+    img = Image.new("RGBA", (w * SS, h * SS), (0, 0, 0, 0))
+    x0, y0 = (left - ox) * SS, (top - oy) * SS
+    ImageDraw.Draw(img).rounded_rectangle(
+        [x0, y0, x0 + BATTERY_SEG_WIDTH * SS, y0 + BATTERY_SEG_HEIGHT * SS],
+        radius=BATTERY_SEG_HEIGHT / 2 * SS, fill=color + (255,))
+    img.resize((w, h), Image.LANCZOS).save(path)
+    print(f"  {os.path.basename(path)}  {w}x{h}")
+    return ox, oy
+
+
+def battery_threshold(k: int) -> int:
+    """Percent at which segment k (0-based) lights: the level rounded to fifths,
+    but never fewer than one segment while there is any charge."""
+    return max(1, 20 * (k + 1) - 10)
+
+
+def battery_lit(k: int, pct: int) -> bool:
+    """Python twin of battery_on_expr(), for the preview."""
+    return pct >= battery_threshold(k)
+
+
+def battery_on_expr(k: int) -> str:
+    """1 when segment k is lit, else 0. floor((pct + 100 - t) / 100) is 0 below the
+    threshold t and 1 from it up to 100%: pure arithmetic, no comparison operator
+    (see OFF_FIVE for why)."""
+    return f"floor(([BATTERY_PERCENT] + {100 - battery_threshold(k)}) / 100)"
+
+
+# 1 at BATTERY_LOW_PERCENT and below, 0 above. Same trick as battery_on_expr().
+BATTERY_LOW_EXPR = f"(1 - floor(([BATTERY_PERCENT] + {99 - BATTERY_LOW_PERCENT}) / 100))"
+
+
 def draw_blank(path: str) -> None:
     """A 2x2 transparent pixel for the invisible frame-rate hint hand to point at."""
     Image.new("RGBA", (2, 2), (0, 0, 0, 0)).save(path)
@@ -360,7 +430,8 @@ def draw_blank(path: str) -> None:
 def draw_preview(path: str, hour: int, minute: int, second: int,
                  pill_box: tuple[int, int, int, int],
                  comet_box: tuple[int, int, int, int],
-                 lit_boxes: dict[str, tuple[int, int, int, int]]) -> None:
+                 lit_boxes: dict[str, tuple[int, int, int, int]],
+                 battery_origin: tuple[int, int]) -> None:
     """A static render of the face for the watch face picker."""
     img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 255))
 
@@ -409,6 +480,18 @@ def draw_preview(path: str, hour: int, minute: int, second: int,
            fill=(255, 255, 255, 255))
 
     centred(f"{minute:02d}", MINUTE_CX, MINUTE_CY, MINUTE_SIZE)
+
+    if BATTERY:
+        pct = PREVIEW_BATTERY
+        low = pct <= BATTERY_LOW_PERCENT
+        on_name = "battery_seg_low" if low else "battery_seg_on"
+        ox, oy = battery_origin
+        for k in range(BATTERY_SEGMENTS):
+            name = on_name if battery_lit(k, pct) else "battery_seg_track"
+            seg = Image.open(os.path.join(DRAWABLE, name + ".png")).convert("RGBA")
+            img.alpha_composite(seg, (ox + k * (BATTERY_SEG_WIDTH + BATTERY_SEG_GAP), oy))
+        centred(f"{pct}%", CX, BATTERY_TEXT_CY, BATTERY_TEXT_SIZE,
+                (BATTERY_LOW_COLOR if low else BATTERY_TEXT_COLOR) + (255,))
 
     img.convert("RGB").save(path)
     print(f"  {os.path.basename(path)}  {SIZE}x{SIZE}")
@@ -485,8 +568,53 @@ def lit_tick_image(name: str, box: tuple[int, int, int, int], alpha: str,
 {indent}</PartImage>"""
 
 
+def battery_xml(origin: tuple[int, int], indent: str = "    ") -> str:
+    """Five segments (track, cyan or red by arithmetic alpha) and the percentage."""
+    if not BATTERY:
+        return ""
+    hexc = lambda c: "#{:02x}{:02x}{:02x}".format(*c)
+    ox, oy = origin
+    seg = Image.open(os.path.join(DRAWABLE, "battery_seg_track.png"))
+    w, h = seg.size
+    i2 = indent + "  "
+    parts = []
+    for k in range(BATTERY_SEGMENTS):
+        x = ox + k * (BATTERY_SEG_WIDTH + BATTERY_SEG_GAP)
+        on = battery_on_expr(k)
+        for name, res, alpha in (
+                (f"battery_{k}_track", "battery_seg_track", None),
+                (f"battery_{k}_on", "battery_seg_on", f"255 * {on} * (1 - {BATTERY_LOW_EXPR})"),
+                (f"battery_{k}_low", "battery_seg_low", f"255 * {on} * {BATTERY_LOW_EXPR}")):
+            transform = (f'\n{i2}  <Transform target="alpha" value="{alpha}" />' if alpha else "")
+            parts.append(f"""{i2}<PartImage name="{name}" x="{x}" y="{oy}" width="{w}" height="{h}">{transform}
+{i2}  <Image resource="{res}" />
+{i2}</PartImage>""")
+    box_w, box_h = 70, 30
+    for name, color, alpha in (("battery_percent", BATTERY_TEXT_COLOR, f"255 * (1 - {BATTERY_LOW_EXPR})"),
+                               ("battery_percent_low", BATTERY_LOW_COLOR, f"255 * {BATTERY_LOW_EXPR}")):
+        parts.append(f"""{i2}<PartText name="{name}" x="{round(CX - box_w / 2)}" y="{round(BATTERY_TEXT_CY - box_h / 2)}"
+{i2}          width="{box_w}" height="{box_h}">
+{i2}  <Transform target="alpha" value="{alpha}" />
+{i2}  <Text align="CENTER">
+{i2}    <Font family="{FONT_FAMILY}" size="{BATTERY_TEXT_SIZE}" weight="BOLD" color="{hexc(color)}">
+{i2}      <Template>%d%%<Parameter expression="[BATTERY_PERCENT]" /></Template>
+{i2}    </Font>
+{i2}  </Text>
+{i2}</PartText>""")
+    body = "\n".join(parts)
+    return f"""
+{indent}<!-- Battery: five segments filled to the nearest fifth, the percentage under
+{indent}     them. Cyan normally, red at {BATTERY_LOW_PERCENT}% and below. -->
+{indent}<Group name="battery" x="0" y="0" width="{SIZE}" height="{SIZE}">
+{indent}  <Variant mode="AMBIENT" target="alpha" value="{BATTERY_AMBIENT_ALPHA}" />
+{body}
+{indent}</Group>
+"""
+
+
 def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, int, int],
-              lit_boxes: dict[str, tuple[int, int, int, int]]) -> str:
+              lit_boxes: dict[str, tuple[int, int, int, int]],
+              battery_origin: tuple[int, int]) -> str:
     hour_box_w = 220
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <!--
@@ -567,7 +695,7 @@ def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, in
         </Font>
       </Text>
     </PartText>
-{frame_rate_probe()}
+{battery_xml(battery_origin)}{frame_rate_probe()}
 {drift_close()}
   </Scene>
 </WatchFace>
@@ -631,12 +759,19 @@ def main() -> None:
         "tick_lit_minor": draw_lit_tick(os.path.join(DRAWABLE, "tick_lit_minor.png"),
                                         SEC_TICK_MINOR_INNER, SEC_TICK_MINOR_WIDTH),
     }
+    battery_origin = (0, 0)
+    if BATTERY:
+        for name, color in (("battery_seg_track", BATTERY_TRACK_COLOR),
+                            ("battery_seg_on", COMET_COLOR),
+                            ("battery_seg_low", BATTERY_LOW_COLOR)):
+            battery_origin = draw_battery_segment(os.path.join(DRAWABLE, name + ".png"), color)
     draw_blank(os.path.join(DRAWABLE, "blank.png"))
-    draw_preview(os.path.join(DRAWABLE, "preview.png"), *PREVIEW_TIME, pill_box, comet_box, lit_boxes)
+    draw_preview(os.path.join(DRAWABLE, "preview.png"), *PREVIEW_TIME, pill_box, comet_box,
+                 lit_boxes, battery_origin)
 
     xml_path = os.path.join(RAW, "watchface.xml")
     with open(xml_path, "w", encoding="utf-8") as f:
-        f.write(build_xml(pill_box, comet_box, lit_boxes))
+        f.write(build_xml(pill_box, comet_box, lit_boxes, battery_origin))
     print(f"\nwatchface.xml written to {os.path.relpath(xml_path, HERE)}")
 
 

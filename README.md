@@ -19,6 +19,7 @@ The current design follows
 | Outer ring: 60 white ticks, labels 0–55 | one static PNG for the ticks, 12 static `PartText` labels |
 | Inner ring: 60 grey ticks | one static PNG |
 | Hour + minute pill | two `PartText`s and a small filled pill PNG; the hour is right-aligned against the pill |
+| Battery: five segments + percentage under the time | three tiny segment PNGs (track, cyan, red) placed five times, lit by arithmetic alpha on the built-in `[BATTERY_PERCENT]`; red at 15% and below. No `ComplicationSlot`. Dimmed, not hidden, in ambient |
 | Seconds comet (dot, stem, fading tail) | the only moving part: one small cropped PNG inside a full-canvas `Group` rotated by `6 * [SECOND_MILLISECOND]` |
 
 The earlier design rotated a whole tick dial and counter-rotated 12 live labels every
