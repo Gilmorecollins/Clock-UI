@@ -42,7 +42,8 @@ the 450px canvas; the constants at the top of `tools/generate.py` record it.
 - Ambient (redesigned 2026-11-09 for low power) shows only the hour, an
   outlined minute pill, steps and battery, dimmed. Both rings, the comet and the
   lit tick hide. The user asked for no rings and no motion in always-on.
-  Not yet verified on the emulator or the watch.
+  Verified on the emulator on 2026-11-09 (KEYCODE_SLEEP enters ambient);
+  not yet checked on the Galaxy Watch 4.
 
 This avoids the prior approach of rotating an entire outer dial and
 counter-rotating 12 live text labels every frame, which looked laggy.
