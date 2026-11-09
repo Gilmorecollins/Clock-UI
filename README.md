@@ -30,7 +30,8 @@ enlarged after testing on the wrist: at the 40mm watch's scale, small text was h
 
 ### Always-on
 
-The comet and outer ring switch off. The inner ring, time, steps and battery stay, dimmed:
+The always-on face is built for low power: no rings and nothing that moves. Only the
+time, steps and battery stay, dimmed, and the minute pill becomes an outline:
 
 ![Interactive and always-on modes side by side](docs/images/modes.png)
 
@@ -271,10 +272,12 @@ be a placeholder".
   Read it again with: `adb shell dumpsys batterystats`, then find the UID of
   `com.samsung.wear.watchface.runtime` via `adb shell pm list packages -U` (it renders the
   face; the `radialclock` package itself is inert and will look idle).
-- **Always-on display.** Ambient keeps the grey inner ring at alpha 160, the hour and
-  minute pill at 230, and the steps and battery at 200. The comet goes dark because ambient refreshes once a minute, so it
-  would sit frozen on a stale second; the outer ring goes with it, since without the comet
-  it carries no information.
+- **Always-on display.** Ambient shows only the hour and minute (alpha 200) and the steps
+  and battery (alpha 170); the solid minute pill swaps for `pill_outline.png`. The comet,
+  both rings and the lit tick are all hidden. That lights about 21% less than the previous
+  ambient face, which kept the inner ring and a solid pill (rendered mean luminance 4.22% →
+  3.33%). Tune `AMBIENT_TEXT_ALPHA`, `STEPS_AMBIENT_ALPHA` and `BATTERY_AMBIENT_ALPHA` in
+  `generate.py`.
 
   The quality bar (WO-P7) is 15% **mean luminance** across the face, not a count of lit
   pixels. With the earlier design the full interactive face measured 4.46% and ambient

@@ -74,8 +74,12 @@ def face(hour: int = 16, minute: int = 42, second: int = 10, steps: int = 6482,
         img.alpha_composite(rotated("comet", 6 * second))
 
     off = (g.SIZE - g.MIN_IMG) // 2
-    img.alpha_composite(drawable("ticks_minutes", dial), (off, off))
-    img.alpha_composite(drawable("pill", txt), BOX["pill"][:2])
+    if dial:
+        img.alpha_composite(drawable("ticks_minutes", dial), (off, off))
+    if ambient:
+        img.alpha_composite(drawable("pill_outline"), BOX["pill_outline"][:2])
+    else:
+        img.alpha_composite(drawable("pill"), BOX["pill"][:2])
 
     layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
@@ -107,7 +111,7 @@ def face(hour: int = 16, minute: int = 42, second: int = 10, steps: int = 6482,
         grp.alpha_composite(drawable(name), BOX[f"battery_{s}_track"][:2])
     centred(gd, f"{battery}%", g.CX, g.BATTERY_TEXT_CY, g.BATTERY_TEXT_SIZE,
             (g.BATTERY_LOW_COLOR if low else g.BATTERY_TEXT_COLOR) + (255,))
-    if ambient:
+    if ambient:   # steps and battery share one ambient alpha in this renderer
         grp.putalpha(grp.getchannel("A").point(lambda v: v * g.STEPS_AMBIENT_ALPHA // 255))
     img.alpha_composite(grp)
     return img

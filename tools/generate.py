@@ -129,7 +129,7 @@ BATTERY_TRACK_COLOR = (60, 64, 66)
 BATTERY_TEXT_COLOR = (150, 155, 158)
 BATTERY_LOW_COLOR = (255, 92, 77)
 BATTERY_LOW_PERCENT = 15
-BATTERY_AMBIENT_ALPHA = 200
+BATTERY_AMBIENT_ALPHA = 170
 PREVIEW_BATTERY = 78
 
 # Steps: the day's count above the time, and under it a footprints icon beside a
@@ -152,7 +152,7 @@ STEPS_TIERS = [                     # (from % of goal, icon colour)
     (75, (11, 225, 253)),           # cyan    nearly there (the face's accent)
     (100, (120, 230, 140)),         # green   goal reached
 ]
-STEPS_AMBIENT_ALPHA = 200
+STEPS_AMBIENT_ALPHA = 170
 PREVIEW_STEPS = (6482, 10000)       # count, goal
 
 SS = 4                              # supersampling factor for antialiasing
@@ -188,8 +188,14 @@ SWEEP_FREQUENCY = "SYNC_TO_DEVICE"
 # it would sit frozen on a stale second. The outer ring goes with it: without the
 # comet it carries no information, and dropping it keeps the always-on display
 # calm and low-burn. The inner ring, hour and minute stay.
-AMBIENT_DIAL_ALPHA = 160
-AMBIENT_TEXT_ALPHA = 230
+#
+# Always-on is built for low power: no rings and nothing that moves. Only the
+# time, steps and battery remain, dimmed, and the minute pill is an outline rather
+# than a solid fill, so the panel lights as few pixels as possible.
+AMBIENT_DIAL_ALPHA = 0              # inner ring: hidden in ambient
+AMBIENT_TEXT_ALPHA = 200
+AMBIENT_PILL_STROKE = 2.5
+AMBIENT_PILL_COLOR = (96, 101, 104)
 
 # Burn-in protection. Measured on this watch, nothing shifts the face in ambient:
 # two AOD frames 75s apart (which differ elsewhere, so the capture was live) put
@@ -359,6 +365,18 @@ def draw_pill(path: str) -> tuple[int, int, int, int]:
     ImageDraw.Draw(img).rounded_rectangle(
         [PILL_LEFT * SS, PILL_TOP * SS, PILL_RIGHT * SS, PILL_BOTTOM * SS],
         radius=PILL_RADIUS * SS, fill=PILL_COLOR,
+    )
+    return save_cropped(img, path)
+
+
+def draw_pill_outline(path: str) -> tuple[int, int, int, int]:
+    """The ambient minute pill: the same rounded rectangle, outline only. The
+    stroke sits inside the filled pill's edge, so the shape doesn't grow."""
+    img = Image.new("RGBA", (SIZE * SS, SIZE * SS), (0, 0, 0, 0))
+    ImageDraw.Draw(img).rounded_rectangle(
+        [PILL_LEFT * SS, PILL_TOP * SS, PILL_RIGHT * SS, PILL_BOTTOM * SS],
+        radius=PILL_RADIUS * SS, outline=AMBIENT_PILL_COLOR + (255,),
+        width=round(AMBIENT_PILL_STROKE * SS),
     )
     return save_cropped(img, path)
 
@@ -744,7 +762,8 @@ def steps_xml(icon_boxes: list[tuple[int, int, int, int]], label_box: tuple[int,
 def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, int, int],
               lit_boxes: dict[str, tuple[int, int, int, int]],
               battery_origin: tuple[int, int],
-              steps_boxes: tuple[list, tuple] | None = None) -> str:
+              steps_boxes: tuple[list, tuple] | None,
+              pill_outline_box: tuple[int, int, int, int]) -> str:
     hour_box_w = 220
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <!--
@@ -792,7 +811,7 @@ def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, in
       </PartImage>
     </Group>
 {drift_open()}
-    <!-- Inner ring: static grey ticks, kept (dimmed) in ambient. -->
+    <!-- Inner ring: static grey ticks. Hidden in ambient to save power. -->
     <Group name="inner_ring" x="0" y="0" width="{SIZE}" height="{SIZE}">
       <Variant mode="AMBIENT" target="alpha" value="{AMBIENT_DIAL_ALPHA}" />
 {centred_image("minutes_ticks", "ticks_minutes", MIN_IMG, "      ")}
@@ -812,8 +831,15 @@ def build_xml(pill_box: tuple[int, int, int, int], comet_box: tuple[int, int, in
 
     <PartImage name="pill" x="{pill_box[0]}" y="{pill_box[1]}"
                width="{pill_box[2] - pill_box[0]}" height="{pill_box[3] - pill_box[1]}">
-      <Variant mode="AMBIENT" target="alpha" value="{AMBIENT_TEXT_ALPHA}" />
+      <Variant mode="AMBIENT" target="alpha" value="0" />
       <Image resource="pill" />
+    </PartImage>
+
+    <!-- In ambient the solid pill gives way to an outline of the same shape. -->
+    <PartImage name="pill_outline" x="{pill_outline_box[0]}" y="{pill_outline_box[1]}"
+               width="{pill_outline_box[2] - pill_outline_box[0]}" height="{pill_outline_box[3] - pill_outline_box[1]}" alpha="0">
+      <Variant mode="AMBIENT" target="alpha" value="255" />
+      <Image resource="pill_outline" />
     </PartImage>
 
     <PartText name="minute" x="{round(MINUTE_CX + MINUTE_NUDGE[0]) - 45}" y="{round(MINUTE_CY + MINUTE_NUDGE[1]) - 35}"
@@ -882,6 +908,7 @@ def main() -> None:
               MIN_TICK_MINOR_WIDTH, MIN_TICK_MAJOR_WIDTH,
               MIN_TICK_MINOR_COLOR, MIN_TICK_MAJOR_COLOR)
     pill_box = draw_pill(os.path.join(DRAWABLE, "pill.png"))
+    pill_outline_box = draw_pill_outline(os.path.join(DRAWABLE, "pill_outline.png"))
     comet_box = draw_comet(os.path.join(DRAWABLE, "comet.png"))
     lit_boxes = {
         "tick_lit_major": draw_lit_tick(os.path.join(DRAWABLE, "tick_lit_major.png"),
@@ -906,7 +933,8 @@ def main() -> None:
 
     xml_path = os.path.join(RAW, "watchface.xml")
     with open(xml_path, "w", encoding="utf-8") as f:
-        f.write(build_xml(pill_box, comet_box, lit_boxes, battery_origin, steps_boxes))
+        f.write(build_xml(pill_box, comet_box, lit_boxes, battery_origin, steps_boxes,
+                          pill_outline_box))
     print(f"\nwatchface.xml written to {os.path.relpath(xml_path, HERE)}")
 
 

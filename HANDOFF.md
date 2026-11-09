@@ -39,8 +39,10 @@ the 450px canvas; the constants at the top of `tools/generate.py` record it.
 - Font: Google Sans Flex Bold (SIL OFL 1.1). Comfortaa was removed.
 - An invisible WFF `SecondHand` uses `Sweep frequency="SYNC_TO_DEVICE"` to
   request the smoothest cadence the current device can sustain.
-- Ambient keeps the inner ring, hour, minute pill, steps and battery; the
-  comet and outer ring hide.
+- Ambient (redesigned 2026-11-09 for low power) shows only the hour, an
+  outlined minute pill, steps and battery, dimmed. Both rings, the comet and the
+  lit tick hide. The user asked for no rings and no motion in always-on.
+  Not yet verified on the emulator or the watch.
 
 This avoids the prior approach of rotating an entire outer dial and
 counter-rotating 12 live text labels every frame, which looked laggy.

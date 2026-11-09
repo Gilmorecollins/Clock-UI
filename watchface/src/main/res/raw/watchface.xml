@@ -239,9 +239,9 @@
       <Transform target="x" value="[MINUTE] % 5 - 2" />
       <Transform target="y" value="floor([MINUTE] / 5) % 5 - 2" />
 
-    <!-- Inner ring: static grey ticks, kept (dimmed) in ambient. -->
+    <!-- Inner ring: static grey ticks. Hidden in ambient to save power. -->
     <Group name="inner_ring" x="0" y="0" width="450" height="450">
-      <Variant mode="AMBIENT" target="alpha" value="160" />
+      <Variant mode="AMBIENT" target="alpha" value="0" />
       <PartImage name="minutes_ticks" x="78" y="78" width="294" height="294">
         <Image resource="ticks_minutes" />
       </PartImage>
@@ -251,7 +251,7 @@
          12/24-hour setting. -->
     <PartText name="hour" x="21" y="158"
               width="220" height="140">
-      <Variant mode="AMBIENT" target="alpha" value="230" />
+      <Variant mode="AMBIENT" target="alpha" value="200" />
       <Text align="END">
         <Font family="google_sans_flex" size="106" weight="BOLD" color="#ffffff">
           <Template>%02d<Parameter expression="[IS_24_HOUR_MODE] ? [HOUR_0_23] : [HOUR_1_12]" /></Template>
@@ -261,13 +261,20 @@
 
     <PartImage name="pill" x="250" y="189"
                width="95" height="72">
-      <Variant mode="AMBIENT" target="alpha" value="230" />
+      <Variant mode="AMBIENT" target="alpha" value="0" />
       <Image resource="pill" />
+    </PartImage>
+
+    <!-- In ambient the solid pill gives way to an outline of the same shape. -->
+    <PartImage name="pill_outline" x="250" y="189"
+               width="95" height="72" alpha="0">
+      <Variant mode="AMBIENT" target="alpha" value="255" />
+      <Image resource="pill_outline" />
     </PartImage>
 
     <PartText name="minute" x="252" y="191"
               width="90" height="70">
-      <Variant mode="AMBIENT" target="alpha" value="230" />
+      <Variant mode="AMBIENT" target="alpha" value="200" />
       <Text align="CENTER">
         <Font family="google_sans_flex" size="52" weight="BOLD" color="#ffffff">
           <Template>%02d<Parameter expression="[MINUTE]" /></Template>
@@ -278,7 +285,7 @@
     <!-- Steps: the count, then a footprints icon beside "STEPS". The icon's colour
          follows progress towards the daily goal: 0%, 25%, 50%, 75%, 100%. -->
     <Group name="steps" x="0" y="0" width="450" height="450">
-      <Variant mode="AMBIENT" target="alpha" value="200" />
+      <Variant mode="AMBIENT" target="alpha" value="170" />
       <PartText name="steps_count" x="180" y="114"
                 width="90" height="36">
         <Text align="CENTER">
@@ -315,7 +322,7 @@
     <!-- Battery: five segments filled to the nearest fifth, the percentage under
          them. Cyan normally, red at 15% and below. -->
     <Group name="battery" x="0" y="0" width="450" height="450">
-      <Variant mode="AMBIENT" target="alpha" value="200" />
+      <Variant mode="AMBIENT" target="alpha" value="170" />
       <PartImage name="battery_0_track" x="179" y="294" width="16" height="12">
         <Image resource="battery_seg_track" />
       </PartImage>
